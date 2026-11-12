@@ -63,7 +63,7 @@ val LocalCarDimens = staticCompositionLocalOf { CarDimens() }
 private val CyanElectric = Color(0xFF00D1B2)
 private val CyanDeep = Color(0xFF005649)
 
-private val NightColors: ColorScheme = darkColorScheme(
+private val ObsidianColors: ColorScheme = darkColorScheme(
     primary = CyanElectric,
     onPrimary = Color(0xFF001F1A),
     primaryContainer = Color(0xFF0C3831),
@@ -89,6 +89,120 @@ private val NightColors: ColorScheme = darkColorScheme(
     outlineVariant = Color(0xFF1E2533),
     error = Color(0xFFFF5252),
 )
+
+/** Porsche Minimalist: refined monochrome platinum typography, stark deep contrast. */
+private val PorscheColors: ColorScheme = darkColorScheme(
+    primary = Color(0xFFF0F3F7),
+    onPrimary = Color(0xFF0C0E12),
+    primaryContainer = Color(0xFF2B313D),
+    onPrimaryContainer = Color(0xFFFFFFFF),
+    secondary = Color(0xFFBAC2CF),
+    onSecondary = Color(0xFF181B22),
+    secondaryContainer = Color(0xFF1E222B),
+    onSecondaryContainer = Color(0xFFDEE3ED),
+    tertiary = Color(0xFFC7CBD1),
+    onTertiary = Color(0xFF14171C),
+    background = Color(0xFF060608),
+    onBackground = Color(0xFFF5F7FA),
+    surface = Color(0xFF0C0E12),
+    onSurface = Color(0xFFF5F7FA),
+    surfaceVariant = Color(0xFF161920),
+    onSurfaceVariant = Color(0xFFA0A7B5),
+    surfaceContainerLowest = Color(0xFF040405),
+    surfaceContainerLow = Color(0xFF0F1116),
+    surfaceContainer = Color(0xFF15181F),
+    surfaceContainerHigh = Color(0xFF1D212B),
+    surfaceContainerHighest = Color(0xFF272D3A),
+    outline = Color(0xFF3B4456),
+    outlineVariant = Color(0xFF212733),
+    error = Color(0xFFFF5252),
+)
+
+/** Cyber Amber: BMW/Polestar warm cockpit illumination for fatigue-free night driving. */
+private val AmberColors: ColorScheme = darkColorScheme(
+    primary = Color(0xFFFF9500),
+    onPrimary = Color(0xFF261300),
+    primaryContainer = Color(0xFF472600),
+    onPrimaryContainer = Color(0xFFFFD199),
+    secondary = Color(0xFFD4C2B0),
+    onSecondary = Color(0xFF2E2317),
+    secondaryContainer = Color(0xFF261F17),
+    onSecondaryContainer = Color(0xFFF5E4D3),
+    tertiary = Color(0xFFFFB86B),
+    onTertiary = Color(0xFF331600),
+    background = Color(0xFF070605),
+    onBackground = Color(0xFFF5EDE6),
+    surface = Color(0xFF0D0B09),
+    onSurface = Color(0xFFF5EDE6),
+    surfaceVariant = Color(0xFF1B1612),
+    onSurfaceVariant = Color(0xFFBAAEA2),
+    surfaceContainerLowest = Color(0xFF050403),
+    surfaceContainerLow = Color(0xFF120F0C),
+    surfaceContainer = Color(0xFF181410),
+    surfaceContainerHigh = Color(0xFF211C17),
+    surfaceContainerHighest = Color(0xFF2C251F),
+    outline = Color(0xFF4C3E33),
+    outlineVariant = Color(0xFF29211A),
+    error = Color(0xFFFF5252),
+)
+
+/** M-Sport Racing Red: high-performance dark theme with track red indicators. */
+private val RacingColors: ColorScheme = darkColorScheme(
+    primary = Color(0xFFFF3B30),
+    onPrimary = Color(0xFF290200),
+    primaryContainer = Color(0xFF4D0904),
+    onPrimaryContainer = Color(0xFFFFB4AB),
+    secondary = Color(0xFFC9BDBC),
+    onSecondary = Color(0xFF2A201F),
+    secondaryContainer = Color(0xFF241C1B),
+    onSecondaryContainer = Color(0xFFECDFDE),
+    tertiary = Color(0xFF007AFF),
+    onTertiary = Color(0xFFFFFFFF),
+    background = Color(0xFF070708),
+    onBackground = Color(0xFFF2EDED),
+    surface = Color(0xFF0D0D10),
+    onSurface = Color(0xFFF2EDED),
+    surfaceVariant = Color(0xFF1A181A),
+    onSurfaceVariant = Color(0xFFB5AAA9),
+    surfaceContainerLowest = Color(0xFF050506),
+    surfaceContainerLow = Color(0xFF111114),
+    surfaceContainer = Color(0xFF18171B),
+    surfaceContainerHigh = Color(0xFF201F25),
+    surfaceContainerHighest = Color(0xFF2C2A33),
+    outline = Color(0xFF4A4349),
+    outlineVariant = Color(0xFF262125),
+    error = Color(0xFFFF5252),
+)
+
+/** Classic Teal: original Aare turquoise palette. */
+private val ClassicTealColors: ColorScheme = darkColorScheme(
+    primary = Color(0xFF3DDBC6),
+    onPrimary = Color(0xFF00201C),
+    primaryContainer = Color(0xFF0E3B36),
+    onPrimaryContainer = Color(0xFFB9F5EA),
+    secondary = Color(0xFFB4CAC5),
+    onSecondary = Color(0xFF1F3531),
+    secondaryContainer = Color(0xFF263330),
+    onSecondaryContainer = Color(0xFFD0E6E1),
+    tertiary = Color(0xFFFFB86B),
+    onTertiary = Color(0xFF2E1500),
+    background = Color(0xFF0B0F0F),
+    onBackground = Color(0xFFE3E9E7),
+    surface = Color(0xFF0B0F0F),
+    onSurface = Color(0xFFE3E9E7),
+    surfaceVariant = Color(0xFF1A2120),
+    onSurfaceVariant = Color(0xFFAFBAB7),
+    surfaceContainerLowest = Color(0xFF060909),
+    surfaceContainerLow = Color(0xFF121818),
+    surfaceContainer = Color(0xFF161D1C),
+    surfaceContainerHigh = Color(0xFF1D2524),
+    surfaceContainerHighest = Color(0xFF26302E),
+    outline = Color(0xFF5E6B68),
+    outlineVariant = Color(0xFF2E3836),
+    error = Color(0xFFFF8A80),
+)
+
+private val NightColors = ObsidianColors
 
 private val DayColors: ColorScheme = lightColorScheme(
     primary = CyanDeep,
@@ -134,9 +248,16 @@ private val CarShapes = Shapes(
 )
 
 @Composable
-fun CarTheme(night: Boolean, content: @Composable () -> Unit) {
+fun CarTheme(night: Boolean, theme: String = "obsidian", content: @Composable () -> Unit) {
+    val darkColors = when (theme.lowercase()) {
+        "porsche" -> PorscheColors
+        "amber" -> AmberColors
+        "racing" -> RacingColors
+        "classic" -> ClassicTealColors
+        else -> ObsidianColors
+    }
     MaterialTheme(
-        colorScheme = if (night) NightColors else DayColors,
+        colorScheme = if (night) darkColors else DayColors,
         typography = CarType,
         shapes = CarShapes,
         content = content,
@@ -145,6 +266,13 @@ fun CarTheme(night: Boolean, content: @Composable () -> Unit) {
 
 /** Phone UI theme: same palette, normal phone type scale. */
 @Composable
-fun PhoneTheme(dark: Boolean, content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (dark) NightColors else DayColors, content = content)
+fun PhoneTheme(dark: Boolean, theme: String = "obsidian", content: @Composable () -> Unit) {
+    val darkColors = when (theme.lowercase()) {
+        "porsche" -> PorscheColors
+        "amber" -> AmberColors
+        "racing" -> RacingColors
+        "classic" -> ClassicTealColors
+        else -> ObsidianColors
+    }
+    MaterialTheme(colorScheme = if (dark) darkColors else DayColors, content = content)
 }

@@ -133,6 +133,16 @@ class Settings(context: Context) {
         get() = prefs.getString("car_theme", THEME_AUTO) ?: THEME_AUTO
         set(v) = prefs.edit { putString("car_theme", v) }
 
+    /** Cockpit palette: [THEME_STYLE_OBSIDIAN], [THEME_STYLE_PORSCHE], [THEME_STYLE_AMBER], [THEME_STYLE_RACING], [THEME_STYLE_CLASSIC]. */
+    var themeStyle: String
+        get() = prefs.getString("theme_style", THEME_STYLE_OBSIDIAN) ?: THEME_STYLE_OBSIDIAN
+        set(v) = prefs.edit { putString("theme_style", v) }
+
+    /** Keep standalone phone apps (e.g. Google Maps, Waze, YouTube) running while vehicle is in motion. */
+    var allowMovingStandalone: Boolean
+        get() = prefs.getBoolean("allow_moving_standalone", true)
+        set(v) = prefs.edit { putBoolean("allow_moving_standalone", v) }
+
     /** Stream phone audio to the car (needs the screen-capture consent for audio). */
     var carAudio: Boolean
         get() = prefs.getBoolean("car_audio", true)
@@ -298,6 +308,11 @@ class Settings(context: Context) {
         const val THEME_AUTO = "auto"
         const val THEME_DARK = "dark"
         const val THEME_LIGHT = "light"
+        const val THEME_STYLE_OBSIDIAN = "obsidian"
+        const val THEME_STYLE_PORSCHE = "porsche"
+        const val THEME_STYLE_AMBER = "amber"
+        const val THEME_STYLE_RACING = "racing"
+        const val THEME_STYLE_CLASSIC = "classic"
         const val STYLE_AUTO = "auto"
         const val STYLE_CARPLAY = "carplay"
         const val WALLPAPER_CUSTOM = "custom"

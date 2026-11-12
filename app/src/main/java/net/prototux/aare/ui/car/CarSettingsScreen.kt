@@ -38,6 +38,7 @@ import net.prototux.aare.ui.theme.LocalCarDimens
 @Composable
 internal fun CarSettingsScreen(settings: Settings, modifier: Modifier) {
     var theme by remember { mutableStateOf(settings.carTheme) }
+    var palette by remember { mutableStateOf(settings.themeStyle) }
     var rail by remember { mutableStateOf(settings.railPosition) }
     var style by remember { mutableStateOf(settings.carStyle) }
     var banners by remember { mutableStateOf(settings.messageBanners) }
@@ -45,12 +46,28 @@ internal fun CarSettingsScreen(settings: Settings, modifier: Modifier) {
     var audio by remember { mutableStateOf(settings.carAudio) }
     var darkBar by remember { mutableStateOf(settings.darkBar) }
     var passenger by remember { mutableStateOf(settings.ignoreDriving) }
+    var allowMoving by remember { mutableStateOf(settings.allowMovingStandalone) }
     LazyColumn(
         modifier.background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item { Text(stringResource(R.string.setup_app_entry_settings), style = MaterialTheme.typography.headlineSmall) }
+        item {
+            Choice(
+                "Cockpit Palette",
+                listOf(
+                    Settings.THEME_STYLE_OBSIDIAN to "Obsidian Cyan",
+                    Settings.THEME_STYLE_PORSCHE to "Porsche Platinum",
+                    Settings.THEME_STYLE_AMBER to "Cyber Amber",
+                    Settings.THEME_STYLE_RACING to "M-Sport Red",
+                    Settings.THEME_STYLE_CLASSIC to "Classic Teal",
+                ),
+                palette,
+            ) {
+                palette = it; settings.themeStyle = it
+            }
+        }
         item {
             Choice(stringResource(R.string.setup_choice_colors), listOf(Settings.THEME_AUTO to stringResource(R.string.setup_choice_colors_auto), Settings.THEME_DARK to stringResource(R.string.setup_choice_dark), Settings.THEME_LIGHT to stringResource(R.string.setup_choice_light)), theme) {
                 theme = it; settings.carTheme = it
@@ -67,6 +84,7 @@ internal fun CarSettingsScreen(settings: Settings, modifier: Modifier) {
             }
         }
         item { SwitchRow(stringResource(R.string.setup_switch_dark_bar), darkBar) { darkBar = it; settings.darkBar = it } }
+        item { SwitchRow("Keep Standalone Apps Running While Moving", allowMoving) { allowMoving = it; settings.allowMovingStandalone = it } }
         item { SwitchRow(stringResource(R.string.setup_switch_passenger), passenger) { passenger = it; settings.ignoreDriving = it } }
         item { SwitchRow(stringResource(R.string.setup_switch_message_notifications), banners) { banners = it; settings.messageBanners = it } }
         item { SwitchRow(stringResource(R.string.msg_toggle_read_aloud_title), aloud) { aloud = it; settings.readMessagesAloud = it } }

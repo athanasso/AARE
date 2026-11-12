@@ -296,6 +296,7 @@ class CarRuntime(
         }
         ui.railBottom = position == Settings.RAIL_BOTTOM
         ui.driverOnRight = rightHandDrive
+        ui.themeStyle = settings.themeStyle
         ui.railOnRight = when (position) {
             Settings.RAIL_LEFT -> false
             Settings.RAIL_RIGHT -> true
@@ -305,7 +306,7 @@ class CarRuntime(
 
     private val settingsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
-            "car_theme", "rail_position", "car_style", "dark_bar", "ignore_driving" -> main.post { applyScreenSettings() }
+            "car_theme", "theme_style", "rail_position", "car_style", "dark_bar", "ignore_driving" -> main.post { applyScreenSettings() }
             "wallpaper" -> main.post { ui.wallpaper = ""; applyScreenSettings() }
             // Apps shown or hidden from the phone: update the car's app list now.
             "hidden_apps", "phone_screen", "assistant_pkg", "app_order" -> main.post { refreshApps() }
@@ -675,7 +676,7 @@ class CarRuntime(
     @Composable
     fun Root(modifier: Modifier = Modifier) {
         val mediaApps by media.apps.collectAsState()
-        CarTheme(night = ui.night) {
+        CarTheme(night = ui.night, theme = ui.themeStyle) {
             CompositionLocalProvider(LocalCarDimens provides LocalCarDimens.current) {
                 CarShell(
                     state = ui,
@@ -687,9 +688,9 @@ class CarRuntime(
                                 if (m != null) media.Screen(m, ui.drivingRestricted, mod)
                             }
                             CarAppKind.MESSAGING -> MessagingScreen(app, ui.drivingRestricted, this, mod)
-                            CarAppKind.PHONE_SCREEN -> MirrorScreen(this, ui.drivingRestricted, mod)
-                            CarAppKind.STANDALONE -> StandaloneAppScreen(this, ui.drivingRestricted, app.packageName, mod)
-                            CarAppKind.BROWSER -> BrowserScreen(this, ui.drivingRestricted, settings.browserUrl, mod)
+                            CarAppKind.PHONE_SCREEN -> MirrorScreen(this, ui.drivingRestricted && !settings.allowMovingStandalone, mod)
+                            CarAppKind.STANDALONE -> StandaloneAppScreen(this, ui.drivingRestricted && !settings.allowMovingStandalone, app.packageName, mod)
+                            CarAppKind.BROWSER -> BrowserScreen(this, ui.drivingRestricted && !settings.allowMovingStandalone, settings.browserUrl, mod)
                             CarAppKind.CAR_DATA -> CarDataScreen(mod)
                             CarAppKind.PHONE -> PhoneScreen(this, mod)
                             CarAppKind.SETTINGS -> CarSettingsScreen(settings, mod)

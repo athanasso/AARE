@@ -43,9 +43,19 @@ object VehicleOverrides {
 
     /** The override for this head unit, or null. The file is tiny, so it is read each connection. */
     fun forHeadUnit(context: Context, make: String, model: String, name: String): VehicleOverride? {
-        val text = runCatching { file(context).takeIf { it.exists() }?.readText() }.getOrNull() ?: return null
-        val rules = runCatching { parse(text) }.onFailure { Log.w(TAG, "vehicles.json: ${it.message}") }.getOrNull() ?: return null
-        return rules.firstOrNull { it.matches(make, model, name) }?.override
+        val text = runCatching { file(context).takeIf { it.exists() }?.readText() }.getOrNull()
+        val rules = text?.let { runCatching { parse(it) }.onFailure { Log.w(TAG, "vehicles.json: ${it.message}") }.getOrNull() } ?: emptyList()
+        val customMatch = rules.firstOrNull { it.matches(make, model, name) }?.override
+        if (customMatch != null) return customMatch
+
+        // Built-in presets for common aftermarket Chinese head units (Zlink, Tlink, Carlinkit, etc.)
+        val combined = "$make $model $name".lowercase()
+        if (combined.contains("zlink") || combined.contains("tlink") || combined.contains("autokit") ||
+            combined.contains("carlinkit") || combined.contains("xyauto") || combined.contains("topway") ||
+            combined.contains("ts10") || combined.contains("uis7862") || combined.contains("huanfei")) {
+            return VehicleOverride(dpi = 160, widthMargin = 0, heightMargin = 0)
+        }
+        return null
     }
 
     fun ruleCount(context: Context): Int =

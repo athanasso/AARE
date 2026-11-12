@@ -117,6 +117,8 @@ class CarUiState {
     var carPlayStyle by mutableStateOf(false)
     /** The rail runs along the bottom instead of a side. */
     var railBottom by mutableStateOf(false)
+    /** Cockpit theme palette style. */
+    var themeStyle by mutableStateOf(net.prototux.aare.Settings.THEME_STYLE_OBSIDIAN)
 
     fun app(id: String?): CarAppEntry? = apps.firstOrNull { it.id == id }
 }
