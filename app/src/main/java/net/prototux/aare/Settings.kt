@@ -50,6 +50,44 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("wireless", true)
         set(v) = prefs.edit { putBoolean("wireless", v) }
 
+    /**
+     * Fortuner fork: the bonded device name (substring, case-insensitive) the "Connect now" button
+     * dials directly over RFCOMM, the way `D:\aa-phone-side` (stage1) does — skipping AARE's normal
+     * check that Android has already cached the wireless-Android-Auto UUID for that device (SDP),
+     * which some adapters never do while the system's own Android Auto is disabled.
+     */
+    var wirelessConnectNowTarget: String
+        get() = prefs.getString("wireless_connect_now_target", "") ?: ""
+        set(v) = prefs.edit { putString("wireless_connect_now_target", v) }
+
+    /**
+     * Some wireless adapters (cheap aftermarket dongles especially) only complete the handshake
+     * when every message matches exactly what a genuine phone sends ([WIRELESS_COMPAT_ON]); most
+     * don't need that and work with AARE's normal, slightly different sequence
+     * ([WIRELESS_COMPAT_OFF]). [WIRELESS_COMPAT_AUTO] (the default) works it out per adapter: it
+     * starts with whichever worked with that adapter before ([wirelessProfileFor]), else a guess
+     * from its Bluetooth name, tries the other when the first gets no answer, and remembers the one
+     * that reaches a working session. On and Off pin one sequence for every adapter.
+     */
+    var wirelessCompatMode: String
+        get() = prefs.getString("wireless_compat_mode", WIRELESS_COMPAT_AUTO) ?: WIRELESS_COMPAT_AUTO
+        set(v) = prefs.edit { putString("wireless_compat_mode", v) }
+
+    /**
+     * The handshake that reached a working session with the head unit or adapter at this Bluetooth
+     * address: true the genuine-phone one, false AARE's normal one, null if it never connected.
+     */
+    fun wirelessProfileFor(address: String): Boolean? =
+        prefs.getStringSet("wireless_profiles", emptySet()).orEmpty().firstOrNull { it.startsWith("$address\t") }?.endsWith("\t1")
+
+    fun rememberWirelessProfile(address: String, official: Boolean) {
+        val others = prefs.getStringSet("wireless_profiles", emptySet()).orEmpty().filterNot { it.startsWith("$address\t") }
+        prefs.edit { putStringSet("wireless_profiles", (others + "$address\t${if (official) 1 else 0}").toSet()) }
+    }
+
+    /** Forgets every remembered handshake: the next connection to each adapter is worked out again. */
+    fun forgetWirelessProfiles() = prefs.edit { remove("wireless_profiles") }
+
     /** Check GitHub for a newer release and warn on the home screen. Off never touches the network. */
     var checkUpdates: Boolean
         get() = prefs.getBoolean("check_updates", true)
@@ -147,6 +185,19 @@ class Settings(context: Context) {
     var carAudio: Boolean
         get() = prefs.getBoolean("car_audio", true)
         set(v) = prefs.edit { putBoolean("car_audio", v) }
+
+    /**
+     * Switch calls to speakerphone as soon as they connect, while the car screen is up. AARE only
+     * controls calls through Android's telephony; it never carries their audio itself (unlike
+     * media/navigation, which it streams over its own channel), so a call's audio still goes
+     * wherever the phone's normal call routing sends it. Many wireless adapters advertise a
+     * Bluetooth hands-free profile with no real microphone behind it, silently swallowing the
+     * other side's ability to hear the driver until speakerphone is tapped by hand; this setting
+     * does that automatically instead of leaving the driver to notice and fix it mid-call.
+     */
+    var autoSpeakerOnCall: Boolean
+        get() = prefs.getBoolean("auto_speaker_on_call", true)
+        set(v) = prefs.edit { putBoolean("auto_speaker_on_call", v) }
 
     /**
      * The phone's own Bluetooth MAC, for the car's in-session pairing handshake. Android hides it
@@ -341,6 +392,12 @@ class Settings(context: Context) {
         const val WALLPAPER_CUSTOM = "custom"
         /** The user's wallpaper photo, in the app's files. */
         const val WALLPAPER_FILE = "wallpaper.jpg"
+        /** [wirelessCompatMode]: guess from the adapter's Bluetooth name (the default). */
+        const val WIRELESS_COMPAT_AUTO = "auto"
+        /** [wirelessCompatMode]: always send the exact message order/certificate/version echo a genuine phone uses. */
+        const val WIRELESS_COMPAT_ON = "on"
+        /** [wirelessCompatMode]: always use AARE's normal sequence. */
+        const val WIRELESS_COMPAT_OFF = "off"
     }
 
     fun registerListener(l: SharedPreferences.OnSharedPreferenceChangeListener) = prefs.registerOnSharedPreferenceChangeListener(l)
