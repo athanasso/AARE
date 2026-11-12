@@ -28,45 +28,70 @@ data class CarDimens(
     val touchTarget: Dp = 76.dp,
     val railWidth: Dp = 96.dp,
     val gutter: Dp = 12.dp,
-    val cardRadius: Dp = 28.dp,
+    val cardRadius: Dp = 20.dp,
     val iconSize: Dp = 36.dp,
+    val isCompact: Boolean = false,
 )
+
+/** Responsive sizing: tunes rail, gutters and touch targets for 7" / low-res car panels. */
+fun carDimensFor(width: Dp, height: Dp): CarDimens {
+    val isCompact = minOf(width, height) < 560.dp || width < 760.dp
+    return if (isCompact) {
+        CarDimens(
+            touchTarget = 56.dp,
+            railWidth = 68.dp,
+            gutter = 8.dp,
+            cardRadius = 14.dp,
+            iconSize = 28.dp,
+            isCompact = true,
+        )
+    } else {
+        CarDimens(
+            touchTarget = 74.dp,
+            railWidth = 92.dp,
+            gutter = 12.dp,
+            cardRadius = 18.dp,
+            iconSize = 34.dp,
+            isCompact = false,
+        )
+    }
+}
 
 val LocalCarDimens = staticCompositionLocalOf { CarDimens() }
 
-/** Brand accent: a river teal (the Aare is famously turquoise). */
-private val Teal = Color(0xFF3DDBC6)
-private val TealDeep = Color(0xFF00695C)
+/** Electric Cyan cockpit accent: high visibility against dark cabin environments. */
+private val CyanElectric = Color(0xFF00D1B2)
+private val CyanDeep = Color(0xFF005649)
 
 private val NightColors: ColorScheme = darkColorScheme(
-    primary = Teal,
-    onPrimary = Color(0xFF00201C),
-    primaryContainer = Color(0xFF0E3B36),
-    onPrimaryContainer = Color(0xFFB9F5EA),
-    secondary = Color(0xFFB4CAC5),
-    onSecondary = Color(0xFF1F3531),
-    secondaryContainer = Color(0xFF263330),
-    onSecondaryContainer = Color(0xFFD0E6E1),
-    tertiary = Color(0xFFFFB86B),
-    onTertiary = Color(0xFF2E1500),
-    background = Color(0xFF0B0F0F),
-    onBackground = Color(0xFFE3E9E7),
-    surface = Color(0xFF0B0F0F),
-    onSurface = Color(0xFFE3E9E7),
-    surfaceVariant = Color(0xFF1A2120),
-    onSurfaceVariant = Color(0xFFAFBAB7),
-    surfaceContainerLowest = Color(0xFF060909),
-    surfaceContainerLow = Color(0xFF121818),
-    surfaceContainer = Color(0xFF161D1C),
-    surfaceContainerHigh = Color(0xFF1D2524),
-    surfaceContainerHighest = Color(0xFF26302E),
-    outline = Color(0xFF5E6B68),
-    outlineVariant = Color(0xFF2E3836),
-    error = Color(0xFFFF8A80),
+    primary = CyanElectric,
+    onPrimary = Color(0xFF001F1A),
+    primaryContainer = Color(0xFF0C3831),
+    onPrimaryContainer = Color(0xFF86F8E7),
+    secondary = Color(0xFFB0C5C0),
+    onSecondary = Color(0xFF1B312E),
+    secondaryContainer = Color(0xFF1B242C),
+    onSecondaryContainer = Color(0xFFD4E8E3),
+    tertiary = Color(0xFFFFB25B),
+    onTertiary = Color(0xFF331600),
+    background = Color(0xFF060709),
+    onBackground = Color(0xFFEDF1F5),
+    surface = Color(0xFF0B0D12),
+    onSurface = Color(0xFFEDF1F5),
+    surfaceVariant = Color(0xFF151922),
+    onSurfaceVariant = Color(0xFFA1AAB7),
+    surfaceContainerLowest = Color(0xFF040507),
+    surfaceContainerLow = Color(0xFF0E1117),
+    surfaceContainer = Color(0xFF131720),
+    surfaceContainerHigh = Color(0xFF1A202B),
+    surfaceContainerHighest = Color(0xFF232A39),
+    outline = Color(0xFF303B4F),
+    outlineVariant = Color(0xFF1E2533),
+    error = Color(0xFFFF5252),
 )
 
 private val DayColors: ColorScheme = lightColorScheme(
-    primary = TealDeep,
+    primary = CyanDeep,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFB9F5EA),
     onPrimaryContainer = Color(0xFF00201C),
@@ -102,10 +127,10 @@ private val CarType = Typography(
 )
 
 private val CarShapes = Shapes(
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(28.dp),
-    extraLarge = RoundedCornerShape(36.dp),
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(14.dp),
+    large = RoundedCornerShape(18.dp),
+    extraLarge = RoundedCornerShape(24.dp),
 )
 
 @Composable

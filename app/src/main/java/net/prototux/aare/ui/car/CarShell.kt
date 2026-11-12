@@ -82,6 +82,8 @@ import net.prototux.aare.R
 import net.prototux.aare.notify.PhoneGuidance
 import net.prototux.aare.ui.theme.CarTheme
 import net.prototux.aare.ui.theme.LocalCarDimens
+import net.prototux.aare.ui.theme.carDimensFor
+import androidx.compose.runtime.CompositionLocalProvider
 
 /**
  * Root of the car screen: a rail on the driver's side and the content area.
@@ -109,21 +111,24 @@ fun CarShell(
             val portrait = maxHeight > maxWidth
             // The visible area, not LocalConfiguration: that is the whole codec frame, margins included.
             val area = DpSize(maxWidth, maxHeight)
-            if (portrait || state.railBottom) {
-                Column(Modifier.fillMaxSize()) {
-                    ContentArea(state, actions, appContent, navMap, Modifier.weight(1f))
-                    Rail(state, actions, horizontal = true, area)
+            val dimens = carDimensFor(maxWidth, maxHeight)
+            CompositionLocalProvider(LocalCarDimens provides dimens) {
+                if (portrait || state.railBottom) {
+                    Column(Modifier.fillMaxSize()) {
+                        ContentArea(state, actions, appContent, navMap, Modifier.weight(1f))
+                        Rail(state, actions, horizontal = true, area)
+                    }
+                } else {
+                    Row(Modifier.fillMaxSize()) {
+                        if (!state.railOnRight) Rail(state, actions, horizontal = false, area)
+                        ContentArea(state, actions, appContent, navMap, Modifier.weight(1f))
+                        if (state.railOnRight) Rail(state, actions, horizontal = false, area)
+                    }
                 }
-            } else {
-                Row(Modifier.fillMaxSize()) {
-                    if (!state.railOnRight) Rail(state, actions, horizontal = false, area)
-                    ContentArea(state, actions, appContent, navMap, Modifier.weight(1f))
-                    if (state.railOnRight) Rail(state, actions, horizontal = false, area)
-                }
+                overlay(Modifier.align(Alignment.BottomCenter))
+                NoticeOverlay(state, actions, Modifier.align(Alignment.TopCenter))
+                CallOverlay(state, actions, Modifier.align(Alignment.TopCenter))
             }
-            overlay(Modifier.align(Alignment.BottomCenter))
-            NoticeOverlay(state, actions, Modifier.align(Alignment.TopCenter))
-            CallOverlay(state, actions, Modifier.align(Alignment.TopCenter))
         }
     }
 }
@@ -379,18 +384,27 @@ internal fun Dashboard(
                     latest != null -> Card(Modifier.weight(0.9f).fillMaxHeight(), onClick = {
                         state.apps.firstOrNull { it.kind == CarAppKind.NOTIFICATIONS }?.let(actions::openApp)
                     }) { LatestNotification(latest, state.drivingRestricted) }
+                    else -> CockpitCard(Modifier.weight(0.9f).fillMaxHeight(), onClick = {
+                        state.apps.firstOrNull { it.kind == CarAppKind.CAR_DATA }?.let(actions::openApp)
+                    })
                 }
             }
         } else {
+            // Standard automotive landscape (1024x600, 1280x720, 800x480):
             Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(gutter)) {
-                NavCard(state, actions, navMap, Modifier.weight(1.65f).fillMaxHeight())
+                NavCard(state, actions, navMap, Modifier.weight(1.6f).fillMaxHeight())
                 val event = state.nextEvent
-                if (event == null) {
-                    MediaCard(state, actions, compact = false, modifier = Modifier.weight(1f).fillMaxHeight())
-                } else {
-                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(gutter)) {
-                        MediaCard(state, actions, compact = false, modifier = Modifier.weight(1.3f).fillMaxWidth())
-                        Card(Modifier.weight(1f).fillMaxWidth()) { CalendarCard(event, actions::navigateTo, Modifier.fillMaxSize()) }
+                val latest = state.history.firstOrNull()
+                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(gutter)) {
+                    MediaCard(state, actions, compact = true, modifier = Modifier.weight(1.1f).fillMaxWidth())
+                    when {
+                        event != null -> Card(Modifier.weight(0.9f).fillMaxWidth()) { CalendarCard(event, actions::navigateTo, Modifier.fillMaxSize()) }
+                        latest != null -> Card(Modifier.weight(0.9f).fillMaxWidth(), onClick = {
+                            state.apps.firstOrNull { it.kind == CarAppKind.NOTIFICATIONS }?.let(actions::openApp)
+                        }) { LatestNotification(latest, state.drivingRestricted) }
+                        else -> CockpitCard(Modifier.weight(0.9f).fillMaxWidth(), onClick = {
+                            state.apps.firstOrNull { it.kind == CarAppKind.CAR_DATA }?.let(actions::openApp)
+                        })
                     }
                 }
             }
@@ -399,13 +413,15 @@ internal fun Dashboard(
 }
 
 @Composable
-private fun Card(modifier: Modifier, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
+internal fun Card(modifier: Modifier, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
     val r = LocalCarDimens.current.cardRadius
+    val shape = RoundedCornerShape(r)
     Box(
         modifier
-            .clip(RoundedCornerShape(r))
+            .clip(shape)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), shape)
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .let { if (onClick != null) it.carFocusHighlight(RoundedCornerShape(r)).clickable(onClick = onClick) else it },
+            .let { if (onClick != null) it.carFocusHighlight(shape).clickable(onClick = onClick) else it },
     ) { content() }
 }
 
@@ -510,45 +526,70 @@ private fun MediaCard(state: CarUiState, actions: CarActions, compact: Boolean, 
     val np = state.nowPlaying
     val media = state.app(np?.appId ?: state.activeMediaAppId)
     Card(modifier, onClick = { media?.let(actions::openApp) ?: actions.openLauncher() }) {
-        if (np?.art != null && !compact) {
-            Image(np.art.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.35f)
-            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, MaterialTheme.colorScheme.surfaceContainer))))
+        if (np?.art != null) {
+            Image(
+                np.art.asImageBitmap(),
+                null,
+                Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                alpha = if (compact) 0.18f else 0.28f,
+            )
+            Box(
+                Modifier.fillMaxSize().background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.8f),
+                            MaterialTheme.colorScheme.surfaceContainer,
+                        )
+                    )
+                )
+            )
         }
         val content: @Composable () -> Unit = {
             if (np != null) {
                 Text(np.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(np.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    np.subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             } else {
                 Text(media?.label ?: stringResource(R.string.media_fallback_label), style = MaterialTheme.typography.titleMedium)
                 Text(stringResource(R.string.media_nothing_playing), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         if (compact) {
-            Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Art(np, 80)
-                Spacer(Modifier.width(16.dp))
+            Row(
+                Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Art(np, 58)
+                Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) { content() }
-                MediaButtons(np, actions)
+                Spacer(Modifier.width(8.dp))
+                MediaButtons(np, actions, compact = true)
             }
         } else {
-            Column(Modifier.fillMaxSize().padding(24.dp)) {
+            Column(Modifier.fillMaxSize().padding(20.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Art(np, 72)
-                    Spacer(Modifier.width(16.dp))
-                    if (media != null) AppIcon(media, 28)
+                    Art(np, 68)
+                    Spacer(Modifier.width(14.dp))
+                    if (media != null) AppIcon(media, 26)
                 }
                 Spacer(Modifier.weight(1f))
                 content()
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
                 if (np != null && np.durationMs > 0) {
                     LinearProgressIndicator(
                         progress = { (np.positionMs.toFloat() / np.durationMs).coerceIn(0f, 1f) },
-                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                        modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(10.dp))
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) { MediaButtons(np, actions) }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) { MediaButtons(np, actions, compact = false) }
             }
         }
     }
@@ -556,30 +597,59 @@ private fun MediaCard(state: CarUiState, actions: CarActions, compact: Boolean, 
 
 @Composable
 private fun Art(np: NowPlaying?, sizeDp: Int) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(10.dp)
     if (np?.art != null) {
-        Image(np.art.asImageBitmap(), null, Modifier.size(sizeDp.dp).clip(shape), contentScale = ContentScale.Crop)
+        Box(
+            modifier = Modifier
+                .size(sizeDp.dp)
+                .clip(shape)
+                .border(1.dp, Color.White.copy(alpha = 0.15f), shape),
+        ) {
+            Image(np.art.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        }
     } else {
-        Box(Modifier.size(sizeDp.dp).clip(shape).background(MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.MusicNote, null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size((sizeDp / 2).dp))
+        Box(
+            Modifier
+                .size(sizeDp.dp)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), shape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Rounded.MusicNote, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size((sizeDp / 2).dp))
         }
     }
 }
 
 @Composable
-private fun MediaButtons(np: NowPlaying?, actions: CarActions) {
-    RoundIcon(Icons.Rounded.SkipPrevious, stringResource(R.string.media_action_previous), filled = false) { actions.mediaPrevious() }
-    RoundIcon(if (np?.playing == true) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, stringResource(R.string.media_action_play_pause), filled = true) { actions.mediaPlayPause() }
-    RoundIcon(Icons.Rounded.SkipNext, stringResource(R.string.media_action_next), filled = false) { actions.mediaNext() }
+private fun MediaButtons(np: NowPlaying?, actions: CarActions, compact: Boolean = false) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RoundIcon(Icons.Rounded.SkipPrevious, stringResource(R.string.media_action_previous), filled = false, compact = compact) { actions.mediaPrevious() }
+        RoundIcon(if (np?.playing == true) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, stringResource(R.string.media_action_play_pause), filled = true, compact = compact) { actions.mediaPlayPause() }
+        RoundIcon(Icons.Rounded.SkipNext, stringResource(R.string.media_action_next), filled = false, compact = compact) { actions.mediaNext() }
+    }
 }
 
 @Composable
-fun RoundIcon(icon: ImageVector, label: String, filled: Boolean, onClick: () -> Unit) {
+fun RoundIcon(icon: ImageVector, label: String, filled: Boolean, compact: Boolean = false, onClick: () -> Unit) {
     val d = LocalCarDimens.current
+    val targetSize = if (compact || d.isCompact) 46.dp else d.touchTarget
+    val iconSize = if (compact || d.isCompact) 24.dp else d.iconSize
     val bg = if (filled) MaterialTheme.colorScheme.primary else Color.Transparent
     val fg = if (filled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-    Box(Modifier.size(d.touchTarget).clip(CircleShape).background(bg).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Icon(icon, label, tint = fg, modifier = Modifier.size(d.iconSize))
+    Box(
+        Modifier
+            .size(targetSize)
+            .clip(CircleShape)
+            .background(bg)
+            .let { if (!filled) it.border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), CircleShape) else it }
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, label, tint = fg, modifier = Modifier.size(iconSize))
     }
 }
 
@@ -587,22 +657,28 @@ fun RoundIcon(icon: ImageVector, label: String, filled: Boolean, onClick: () -> 
 
 @Composable
 private fun Launcher(state: CarUiState, actions: CarActions, modifier: Modifier) {
+    val d = LocalCarDimens.current
+    val colWidth = if (d.isCompact) 115.dp else 150.dp
+    val iconSize = if (d.isCompact) 58 else 80
+    val padding = if (d.isCompact) 14.dp else 24.dp
+    val space = if (d.isCompact) 10.dp else 16.dp
+
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(150.dp),
+        columns = GridCells.Adaptive(colWidth),
         modifier = modifier,
-        contentPadding = PaddingValues(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(padding),
+        verticalArrangement = Arrangement.spacedBy(space),
+        horizontalArrangement = Arrangement.spacedBy(space),
     ) {
         // Already in the user's order (CarRuntime.applyApps).
         items(state.apps, key = { it.id }) { app ->
             Column(
-                Modifier.clip(RoundedCornerShape(24.dp)).clickable { actions.openApp(app) }.padding(12.dp),
+                Modifier.clip(RoundedCornerShape(16.dp)).clickable { actions.openApp(app) }.padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                AppIcon(app, 80)
-                Spacer(Modifier.height(10.dp))
-                Text(app.label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                AppIcon(app, iconSize)
+                Spacer(Modifier.height(8.dp))
+                Text(app.label, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
