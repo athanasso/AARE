@@ -299,6 +299,29 @@ class Settings(context: Context) {
         get() = prefs.getInt("cert_index", 0)
         set(v) = prefs.edit { putInt("cert_index", v) }
 
+    /**
+     * Let [net.prototux.aare.cert.CertificateAutoUpdate] fetch and import a newer Android Auto
+     * certificate on its own, once one is published, instead of waiting for a head unit to reject
+     * the old one or for the user to tap Download in Advanced.
+     */
+    var autoUpdateCert: Boolean
+        get() = prefs.getBoolean("auto_update_cert", true)
+        set(v) = prefs.edit { putBoolean("auto_update_cert", v) }
+
+    /** [net.prototux.aare.cert.CertificateAutoUpdate]'s check cache: when it last asked, at most once a day. */
+    var certAutoCheckLastMs: Long
+        get() = prefs.getLong("cert_auto_check_last_ms", 0)
+        set(v) = prefs.edit { putLong("cert_auto_check_last_ms", v) }
+
+    /**
+     * The certificate entry name the user has already seen an "expires soon, no update found"
+     * warning for (see [net.prototux.aare.cert.CertificateAutoUpdate]); the warning stays quiet for
+     * that exact certificate and comes back only once a different one is the one running out.
+     */
+    var certExpiryWarningDismissedFor: String?
+        get() = prefs.getString("cert_expiry_warning_dismissed_for", null)
+        set(v) = prefs.edit { if (v == null) remove("cert_expiry_warning_dismissed_for") else putString("cert_expiry_warning_dismissed_for", v) }
+
     companion object {
         const val BROWSER_DEFAULT_URL = "https://duckduckgo.com/"
         const val RAIL_AUTO = "auto"
