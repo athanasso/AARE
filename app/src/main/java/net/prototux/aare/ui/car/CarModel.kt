@@ -87,6 +87,8 @@ class CarUiState {
     var nowPlaying by mutableStateOf<NowPlaying?>(null)
     /** The navigation app whose map is shown on the dashboard. */
     var activeNavAppId by mutableStateOf<String?>(null)
+    /** The navigation app the Maps tab and route pill open: the active one, else the first installed. */
+    fun navApp(): CarAppEntry? = app(activeNavAppId) ?: apps.firstOrNull { it.isNav }
     /** The media app the dashboard's media card controls. */
     var activeMediaAppId by mutableStateOf<String?>(null)
     val notices = mutableStateListOf<CarNotice>()
@@ -124,10 +126,20 @@ class CarUiState {
     var darkBar by mutableStateOf(false)
     /** The CarPlay-style layout (an easter egg, *Settings > Style*). */
     var carPlayStyle by mutableStateOf(false)
+    /** The car screen's color theme, one of [net.prototux.aare.Settings]'s `STYLE_*` constants. */
+    var shellStyle by mutableStateOf(net.prototux.aare.Settings.STYLE_MIDNIGHT)
+    /** The car screen's layout, one of [net.prototux.aare.Settings]'s `LAYOUT_*` constants. */
+    var shellLayout by mutableStateOf(net.prototux.aare.Settings.LAYOUT_CLASSIC)
     /** The rail runs along the bottom instead of a side. */
     var railBottom by mutableStateOf(false)
     /** Cockpit theme palette style. */
     var themeStyle by mutableStateOf(net.prototux.aare.Settings.THEME_STYLE_OBSIDIAN)
+    /** Dusk's rail starts collapsed (a setting: "Side bar: Auto-hide" / "Hide side bar"). */
+    var railAutoHide by mutableStateOf(false)
+    /** Dusk's Home starts in Map + Music focus instead of the Full widget view (a setting). */
+    var homeMapMusicDefault by mutableStateOf(false)
+    /** How much of Dusk Home's Map + Music row the music card takes, 0..1 (a setting). */
+    var musicWidgetSize by mutableStateOf(0.5f)
 
     fun app(id: String?): CarAppEntry? = apps.firstOrNull { it.id == id }
 }

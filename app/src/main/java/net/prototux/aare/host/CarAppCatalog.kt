@@ -17,7 +17,12 @@ data class CarAppInfo(
     val minApiLevel: Int,
 ) {
     val packageName: String get() = service.packageName
-    val isNavigation: Boolean get() = CATEGORY_NAVIGATION in categories
+    /**
+     * The NAVIGATION category is self-declared by the app, in its own manifest — nothing stops an
+     * app that isn't a map from claiming it to grab the dashboard's map widget (seen with Nuvio).
+     * So it's trusted only for packages in [KNOWN_NAVIGATION_PACKAGES], actual map/navigation apps.
+     */
+    val isNavigation: Boolean get() = CATEGORY_NAVIGATION in categories && packageName in KNOWN_NAVIGATION_PACKAGES
 
     companion object {
         const val SERVICE_ACTION = "androidx.car.app.CarAppService"
