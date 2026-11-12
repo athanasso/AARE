@@ -284,6 +284,8 @@ class CarRuntime(
         // Passenger mode lifts the driving restrictions (keyboard, list lengths, phone screen).
         ui.drivingRestricted = carDriving && !settings.ignoreDriving
         ui.carPlayStyle = settings.carStyle == Settings.STYLE_CARPLAY
+        ui.shellStyle = settings.carStyle
+        ui.shellLayout = settings.carLayout
         ui.darkBar = settings.darkBar
         val wallpaper = settings.wallpaper
         if (wallpaper != ui.wallpaper || (wallpaper == Settings.WALLPAPER_CUSTOM && ui.wallpaperImage == null)) {
@@ -303,11 +305,14 @@ class CarRuntime(
             Settings.RAIL_RIGHT -> true
             else -> rightHandDrive
         }
+        ui.railAutoHide = settings.railAutoHide
+        ui.homeMapMusicDefault = settings.homeMapMusicDefault
+        ui.musicWidgetSize = settings.musicWidgetSize
     }
 
     private val settingsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
-            "car_theme", "theme_style", "rail_position", "car_style", "dark_bar", "ignore_driving" -> main.post { applyScreenSettings() }
+            "car_theme", "theme_style", "rail_position", "rail_auto_hide", "car_style", "car_layout", "dark_bar", "ignore_driving", "home_map_music_default", "music_widget_size" -> main.post { applyScreenSettings() }
             "wallpaper" -> main.post { ui.wallpaper = ""; applyScreenSettings() }
             // Apps shown or hidden from the phone: update the car's app list now.
             "hidden_apps", "phone_screen", "assistant_pkg", "app_order" -> main.post { refreshApps() }
@@ -705,7 +710,7 @@ class CarRuntime(
                             CarAppKind.STANDALONE -> StandaloneAppScreen(this, ui.drivingRestricted && !settings.allowMovingStandalone, app.packageName, app.navigation, mod)
                             CarAppKind.BROWSER -> BrowserScreen(this, ui.drivingRestricted && !settings.allowMovingStandalone, settings.browserUrl, mod)
                             CarAppKind.CAR_DATA -> CarDataScreen(mod)
-                            CarAppKind.PHONE -> PhoneScreen(this, mod)
+                            CarAppKind.PHONE -> PhoneScreen(this, mod, duskLayout = ui.shellLayout == Settings.LAYOUT_DUSK)
                             CarAppKind.SETTINGS -> CarSettingsScreen(settings, mod)
                             CarAppKind.NOTIFICATIONS -> NotificationsScreen(ui, mod)
                             else -> shownConnection(app.id)?.let { CarAppScreen(it, this, mod) }

@@ -135,33 +135,3 @@ internal fun StandaloneAppScreen(
         }
     }
 }
-
-/**
- * Dashboard card for a standalone navigation app (Google Maps, Waze).
- * Tapping opens the map app full screen.
- */
-@Composable
-internal fun StandaloneNavCard(app: CarAppEntry, modifier: Modifier = Modifier, onOpen: () -> Unit) {
-    Column(
-        modifier.fillMaxSize().clickable(onClick = onOpen).padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        val icon = app.icon
-        if (icon != null) {
-            Image(
-                icon.asImageBitmap(), null,
-                Modifier.size(56.dp).clip(RoundedCornerShape(14.dp)),
-            )
-        } else {
-            Icon(
-                Icons.Rounded.Map, null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(48.dp),
-            )
-        }
-        Spacer(Modifier.height(16.dp))
-        Text(app.label, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface)
-        Spacer(Modifier.height(8.dp))
-        Text(stringResource(R.string.standalone_nav_open), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}

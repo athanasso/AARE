@@ -133,10 +133,34 @@ class Settings(context: Context) {
             ?: if (prefs.contains("rail_right")) (if (prefs.getBoolean("rail_right", false)) RAIL_RIGHT else RAIL_LEFT) else RAIL_AUTO
         set(v) = prefs.edit { putString("rail_position", v); remove("rail_right") }
 
-    /** The car screen's layout: [STYLE_AUTO] (Android Auto's) or [STYLE_CARPLAY] (an easter egg). */
+    /** The Dusk car screen's rail starts collapsed, for more map/media width ("Side bar: Auto-hide" / "Hide side bar"). */
+    var railAutoHide: Boolean
+        get() = prefs.getBoolean("rail_auto_hide", false)
+        set(v) = prefs.edit { putBoolean("rail_auto_hide", v) }
+
+    /** The Dusk car screen's Home starts in Map + Music focus instead of the Full widget view. */
+    var homeMapMusicDefault: Boolean
+        get() = prefs.getBoolean("home_map_music_default", false)
+        set(v) = prefs.edit { putBoolean("home_map_music_default", v) }
+
+    /** How much of Dusk Home's Map + Music row the music card takes, from 0 (smallest) to 1 (largest). */
+    var musicWidgetSize: Float
+        get() = prefs.getFloat("music_widget_size", 0.5f)
+        set(v) = prefs.edit { putFloat("music_widget_size", v) }
+
+    /** The car screen's color theme: [STYLE_MIDNIGHT] (the default), [STYLE_AURORA], [STYLE_FOREST], [STYLE_LIGHT] or [STYLE_SPORT]. */
     var carStyle: String
-        get() = prefs.getString("car_style", STYLE_AUTO) ?: STYLE_AUTO
+        get() = prefs.getString("car_style", STYLE_MIDNIGHT) ?: STYLE_MIDNIGHT
         set(v) = prefs.edit { putString("car_style", v) }
+
+    /**
+     * The car screen's layout — independent of [carStyle]'s colors: [LAYOUT_CLASSIC] (the default,
+     * AARE's original rail/dashboard/bottom-bar arrangement) or [LAYOUT_DUSK] (the restructured
+     * layout from `CarUI/dusk.html`).
+     */
+    var carLayout: String
+        get() = prefs.getString("car_layout", LAYOUT_CLASSIC) ?: LAYOUT_CLASSIC
+        set(v) = prefs.edit { putString("car_layout", v) }
 
     /**
      * Passenger mode: ignore the car's "driving" signal, so a passenger can type a destination or
@@ -389,6 +413,16 @@ class Settings(context: Context) {
         const val THEME_STYLE_CLASSIC = "classic"
         const val STYLE_AUTO = "auto"
         const val STYLE_CARPLAY = "carplay"
+        const val STYLE_MIDNIGHT = "midnight"
+        const val STYLE_AURORA = "aurora"
+        const val STYLE_FOREST = "forest"
+        const val STYLE_LIGHT = "light"
+        const val STYLE_SPORT = "sport"
+        const val STYLE_DUSK = "dusk"
+        /** [carLayout]: AARE's original rail/dashboard/bottom-bar arrangement (the default). */
+        const val LAYOUT_CLASSIC = "classic"
+        /** [carLayout]: the restructured layout from `CarUI/dusk.html`. */
+        const val LAYOUT_DUSK = "dusk_layout"
         const val WALLPAPER_CUSTOM = "custom"
         /** The user's wallpaper photo, in the app's files. */
         const val WALLPAPER_FILE = "wallpaper.jpg"
