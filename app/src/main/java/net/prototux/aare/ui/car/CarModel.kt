@@ -24,7 +24,16 @@ class CarAppEntry(
     val label: String,
     val icon: Bitmap?,
     val kind: CarAppKind,
-)
+    /**
+     * A [CarAppKind.STANDALONE] phone app that is a navigation app (Google Maps, Waze…): it takes
+     * the Maps tab and the dashboard's map card like a hosted navigation app, and keeps running
+     * while driving, since directions are what it is for.
+     */
+    val navigation: Boolean = false,
+) {
+    /** A hosted navigation app, or a navigation phone app launched on the car screen. */
+    val isNav: Boolean get() = kind == CarAppKind.NAVIGATION || navigation
+}
 
 @Stable
 class NowPlaying(

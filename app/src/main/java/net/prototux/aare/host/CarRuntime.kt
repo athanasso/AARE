@@ -55,6 +55,7 @@ import net.prototux.aare.ui.car.NowPlaying
 import net.prototux.aare.ui.car.CarDataScreen
 import net.prototux.aare.ui.car.PhoneScreen
 import net.prototux.aare.ui.car.StandaloneAppScreen
+import net.prototux.aare.ui.car.StandaloneNavCard
 import net.prototux.aare.ui.theme.CarTheme
 import net.prototux.aare.ui.theme.LocalCarDimens
 
@@ -409,7 +410,10 @@ class CarRuntime(
                 val info = runCatching { context.packageManager.getApplicationInfo(pkg, 0) }.getOrNull() ?: continue
                 val label = context.packageManager.getApplicationLabel(info).toString()
                 val icon = runCatching { context.packageManager.getApplicationIcon(info).toBitmap(128, 128) }.getOrNull()
-                entries += CarAppEntry(standaloneId(pkg), pkg, label, icon, CarAppKind.STANDALONE)
+                entries += CarAppEntry(
+                    standaloneId(pkg), pkg, label, icon, CarAppKind.STANDALONE,
+                    navigation = pkg in CarAppInfo.KNOWN_NAVIGATION_PACKAGES,
+                )
             }
         }
         if (settings.browser) {
@@ -435,7 +439,7 @@ class CarRuntime(
         // Restore the last navigation and media apps, so the dashboard isn't empty. Not a navigation app that
         // finished itself: its map card would stay blank instead of offering the picker.
         if (ui.activeNavAppId == null) {
-            val nav = entries.filter { it.kind == CarAppKind.NAVIGATION && it.id !in finished }
+            val nav = entries.filter { it.isNav && it.id !in finished }
             ui.activeNavAppId = (nav.firstOrNull { it.packageName == settings.lastNavApp } ?: nav.singleOrNull())?.id
         }
         if (ui.activeMediaAppId == null) {
@@ -461,11 +465,20 @@ class CarRuntime(
         }
     }
 
+    var pendingNavigateUri: String? = null
+
     /** Navigates to [place] in the car's navigation app (geo: query), or false without one. */
     fun navigateTo(place: String): Boolean {
-        val nav = ui.app(ui.activeNavAppId) ?: ui.apps.firstOrNull { it.kind == CarAppKind.NAVIGATION } ?: return false
+        val nav = ui.app(ui.activeNavAppId) ?: ui.apps.firstOrNull { it.isNav } ?: return false
+        val uri = "geo:0,0?q=" + android.net.Uri.encode(place)
+        if (nav.kind == CarAppKind.STANDALONE) {
+            pendingNavigateUri = uri
+            ui.activeNavAppId = nav.id
+            ui.screen = CarScreen.App(nav.id)
+            return true
+        }
         val conn = connection(nav.id) ?: return false
-        conn.connect(Intent(CarContext.ACTION_NAVIGATE).setData(android.net.Uri.parse("geo:0,0?q=" + android.net.Uri.encode(place))))
+        conn.connect(Intent(CarContext.ACTION_NAVIGATE).setData(android.net.Uri.parse(uri)))
         ui.activeNavAppId = nav.id
         ui.screen = CarScreen.App(nav.id)
         return true
@@ -689,7 +702,7 @@ class CarRuntime(
                             }
                             CarAppKind.MESSAGING -> MessagingScreen(app, ui.drivingRestricted, this, mod)
                             CarAppKind.PHONE_SCREEN -> MirrorScreen(this, ui.drivingRestricted && !settings.allowMovingStandalone, mod)
-                            CarAppKind.STANDALONE -> StandaloneAppScreen(this, ui.drivingRestricted && !settings.allowMovingStandalone, app.packageName, mod)
+                            CarAppKind.STANDALONE -> StandaloneAppScreen(this, ui.drivingRestricted && !settings.allowMovingStandalone, app.packageName, app.navigation, mod)
                             CarAppKind.BROWSER -> BrowserScreen(this, ui.drivingRestricted && !settings.allowMovingStandalone, settings.browserUrl, mod)
                             CarAppKind.CAR_DATA -> CarDataScreen(mod)
                             CarAppKind.PHONE -> PhoneScreen(this, mod)
@@ -698,7 +711,10 @@ class CarRuntime(
                             else -> shownConnection(app.id)?.let { CarAppScreen(it, this, mod) }
                         }
                     },
-                    navMap = { app, mod -> shownConnection(app.id)?.let { CarAppScreen(it, this, mod, compact = true) } },
+                    navMap = { app, mod ->
+                        if (app.kind == CarAppKind.STANDALONE) StandaloneNavCard(app, mod) { actions.openApp(app) }
+                        else shownConnection(app.id)?.let { CarAppScreen(it, this, mod, compact = true) }
+                    },
                     overlay = { mod ->
                         val entry = ui.app(ui.assistantAppId)
                         val conn = entry?.let { shownConnection(it.id) }

@@ -27,6 +27,21 @@ data class CarAppInfo(
         const val CATEGORY_MESSAGING = "androidx.car.app.category.MESSAGING"
         const val CATEGORY_CLUSTER = "androidx.car.app.category.FEATURE_CLUSTER"
         const val MIN_API_KEY = "androidx.car.app.minCarApiLevel"
+
+        /** Popular map/navigation apps allowed onto the dashboard's map widget. Ask to add more. */
+        val KNOWN_NAVIGATION_PACKAGES = setOf(
+            "com.google.android.apps.maps", // Google Maps
+            "com.waze",                     // Waze
+            "sa.hudhud.maps",                // HUDHUD Maps
+            "com.sygic.aura",               // Sygic
+            "com.here.app.maps",            // HERE WeGo
+            "net.osmand", "net.osmand.plus",// OsmAnd
+            "com.tomtom.gplay.navapp",      // TomTom GO
+            "ru.yandex.yandexnavi", "ru.yandex.yandexmaps", // Yandex Navigator / Maps
+            "com.mapswithme.maps.pro",      // MAPS.ME
+            "cz.seznam.mapy",               // Mapy.cz
+            "com.citymapper.app.release",   // Citymapper
+        )
     }
 }
 
