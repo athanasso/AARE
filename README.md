@@ -19,6 +19,8 @@ The phone talks the Android Auto projection protocol (AAP) to the car's head uni
 
 No Google Play Services required.
 
+![AARE Cockpit - Hybrid Shell with Live OBD-II Telemetry](docs/screenshots/hybrid_cockpit.png)
+
 ## Key Enhancements in Cockpit Edition
 
 | Feature | Details |
@@ -139,7 +141,11 @@ moving, for a passenger. The driver must not use the screen while driving.
 ### Cockpit UI Shells
 
 - **Dusk Shell:** Modern floating glass dock with collapsible launcher rail, quick navigation shortcuts, audio playback controls, and vehicle status orb.
-- **Hybrid Shell:** Clean, responsive design built specifically for 7" and widescreen head units (1024×600 to 1920×720), featuring live OBD-II telemetry telemetry gauges alongside turn-by-turn guidance.
+- **Hybrid Shell:** Clean, responsive design built specifically for 7" and widescreen head units (1024×600 to 1920×720), featuring live OBD-II telemetry gauges alongside turn-by-turn guidance.
+
+| Dusk Shell (Glassmorphism & Orb) | Companion App (Material 3 Multi-Tab) |
+|---|---|
+| ![AARE Cockpit - Dusk Shell](docs/screenshots/dusk_shell.png) | ![AARE Cockpit - Companion App](docs/screenshots/companion_app.png) |
 
 ### Which apps appear
 
