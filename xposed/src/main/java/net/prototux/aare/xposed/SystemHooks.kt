@@ -43,7 +43,7 @@ object SystemHooks {
         xposed.hook(method).intercept { chain ->
             val code = chain.getArg(0) as Int
             val pkg = chain.getArg(2) as? String
-            if (pkg == ModuleMain.AARE_PACKAGE && code == op) AppOpsManager.MODE_ALLOWED else chain.proceed()
+            if (ModuleMain.isAarePackage(pkg) && code == op) AppOpsManager.MODE_ALLOWED else chain.proceed()
         }
     }
 
@@ -99,7 +99,11 @@ object SystemHooks {
                 3 -> arrayOf(0L, 0)   // (String, long flags, int userId)
                 else -> arrayOf(0, 0) // (String, int flags, int userId)
             }
-            m.invoke(ipm, ModuleMain.AARE_PACKAGE, *extra) as Int
+            try {
+                m.invoke(ipm, ModuleMain.AARE_PACKAGE, *extra) as Int
+            } catch (_: Exception) {
+                m.invoke(ipm, ModuleMain.LEGACY_AARE_PACKAGE, *extra) as Int
+            }
         }.getOrDefault(-1)
     }
 }

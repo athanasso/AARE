@@ -69,7 +69,7 @@ object MediaHooks {
         val method = runCatching { cls.getMethod("getPackageName") }.getOrNull() ?: return
         xposed.hook(method).intercept { chain ->
             val pkg = chain.proceed()
-            if (pkg == ModuleMain.AARE_PACKAGE) GEARHEAD else pkg
+            if (ModuleMain.isAarePackage(pkg as? String)) GEARHEAD else pkg
         }
     }
 
@@ -156,12 +156,18 @@ object MediaHooks {
         runCatching {
             val ctx = Class.forName("android.app.ActivityThread").getMethod("currentApplication").invoke(null) as Context
             val pm = ctx.packageManager
+            val targetPkg = try {
+                pm.getPackageInfo(ModuleMain.AARE_PACKAGE, 0)
+                ModuleMain.AARE_PACKAGE
+            } catch (_: Exception) {
+                ModuleMain.LEGACY_AARE_PACKAGE
+            }
             @Suppress("DEPRECATION")
             val sigs = if (Build.VERSION.SDK_INT >= 28) {
-                val info = pm.getPackageInfo(ModuleMain.AARE_PACKAGE, PackageManager.GET_SIGNING_CERTIFICATES)
+                val info = pm.getPackageInfo(targetPkg, PackageManager.GET_SIGNING_CERTIFICATES)
                 info.signingInfo?.apkContentsSigners ?: emptyArray()
             } else {
-                pm.getPackageInfo(ModuleMain.AARE_PACKAGE, PackageManager.GET_SIGNATURES).signatures ?: emptyArray()
+                pm.getPackageInfo(targetPkg, PackageManager.GET_SIGNATURES).signatures ?: emptyArray()
             }
             val cert = sigs.firstOrNull()?.toByteArray() ?: return@runCatching emptyList()
             val digest = MessageDigest.getInstance("SHA-256").digest(cert)
@@ -240,7 +246,11 @@ object MediaHooks {
     private val aareUid: Int by lazy {
         runCatching {
             val ctx = Class.forName("android.app.ActivityThread").getMethod("currentApplication").invoke(null) as Context
-            ctx.packageManager.getApplicationInfo(ModuleMain.AARE_PACKAGE, 0).uid
+            try {
+                ctx.packageManager.getApplicationInfo(ModuleMain.AARE_PACKAGE, 0).uid
+            } catch (_: Exception) {
+                ctx.packageManager.getApplicationInfo(ModuleMain.LEGACY_AARE_PACKAGE, 0).uid
+            }
         }.getOrDefault(-1)
     }
 }

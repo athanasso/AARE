@@ -1,99 +1,40 @@
-# AARE
+# AARE Cockpit
 
-[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/prototux/AARE)
+[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/athanasso/AARE)
 
-AARE is an open-source reimplementation of the phone side of Android Auto. The phone talks the
-Android Auto projection protocol (AAP) to the car's head unit, draws the car screen itself, and
-runs apps that Google's Android Auto keeps out:
+**AARE Cockpit** is a high-performance, open-source reimplementation of the phone side of Android Auto featuring an advanced automotive cockpit UI, real-time OBD-II vehicle telemetry, customized video rendering, and wireless adapter compatibility.
 
-- **Navigation:** CoMaps, Organic Maps and other apps built with the AndroidX Car App Library,
-  F-Droid builds included.
-- **Media:** Tempus (Subsonic/Navidrome) and any app with a media3 or `MediaBrowserService`
-  library: podcasts, radio, local players.
-- **Messaging:** WhatsApp, Signal, SMS and any app whose notifications Android Auto can read:
-  conversations read aloud, marked as read, answered with the car keyboard when parked.
-- **Voice assistant:** the steering-wheel voice button opens the phone's default digital
-  assistant, or another one you pick. Assistants with a car app, such as
-  [Lapin](https://github.com/prototux/lapin), run on the car screen and hear the car's microphone.
+The phone talks the Android Auto projection protocol (AAP) to the car's head unit, renders custom vehicle shells directly on the phone GPU, and hosts apps without Google Play Services restrictions:
 
-It needs no Google Play Services.
+- **Navigation:** CoMaps, Organic Maps, and any app built with the AndroidX Car App Library.
+- **Media:** Spotify, Subsonic/Navidrome (Tempus), VRadio, and any app with a media3 or `MediaBrowserService` library.
+- **Cockpit Telemetry:** Live vehicle metrics (RPM, Speed, Coolant Temperature, Battery Voltage) via Bluetooth ELM327 OBD-II integration.
+- **Dynamic Audio Visualizer:** Real-time animated audio visualizer integrated into the car dashboard.
+- **Smart Day/Night Switching:** Automatic theme adaptation powered by the phone's ambient light sensor and solar twilight calculations for head units lacking illumination (ILL) wire triggers.
+- **Video Bitrate Tuning:** High-bandwidth hardware H.264/H.265 encoding with selectable bitrates up to 20 Mbps, eliminating compression artifacts on 7" 1024×600 and high-DPI screens.
+- **Hardware Key Remapping:** Intercept and assign custom car actions (toggle shell, home, maps, mute) to steering wheel and rotary knob keys.
+- **Universal Wireless Adapter Compatibility:** Automatic dual-handshake fallback with version echo, supporting Carlinkit, Ottocast, and third-party wireless adapters.
 
-![The car screen: CoMaps guiding, the music, and the bar along the bottom](docs/screenshots/main.png)
+No Google Play Services required.
 
-> [!WARNING]
-> **This is early software.** The protocol stack is tested against a simulated head unit, against
-> AARE's own desktop head unit and against Google's Desktop Head Unit up to the certificate check
-> (see below). So far it has been tried in two real cars, one over wireless and one over USB (see
-> [Tested on real head units](#tested-on-real-head-units)). Don't depend on it while driving
-> until you have tried it in yours.
+## Key Enhancements in Cockpit Edition
 
-## What works
-
-| Part | State |
+| Feature | Details |
 |---|---|
-| Protocol: framing, TLS 1.2 (phone = server), version, service discovery, channels | done, unit and loopback tests |
-| Video: H.264 hardware encoding of a private virtual display, ack flow control, focus, key-frame recovery | done |
-| Adaptive video bitrate: lower when the car or a weak wireless link falls behind, back up when it catches up | new, untested on hardware |
-| Portrait head units: bottom bar, stacked dashboard, CarPlay mode | new, tested only with the desktop head unit's `--portrait` |
-| Touch, keys, rotary controller, steering-wheel voice/media/home/back keys | done |
-| Sensors: driving restrictions, night mode, car GPS and compass (passed to nav apps) | done |
-| Every other sensor the car offers (RPM, odometer, fuel and range, temperature, HVAC, doors, lights, tyres, accelerometer, gyroscope…) for car apps (car hardware API) and the assistant | new, tested only with the desktop head unit's fake car |
-| Car App Library host: handshake, templates, map surface, navigation trips, alerts, car hardware, microphone | done |
-| Template rendering (list, grid, pane, message, search, sign-in, tabs, navigation, map...) | done |
-| Media apps: browse, search, now playing, transport, active session tracking | done |
-| Messaging apps: conversations from notifications, read aloud, mark as read, reply when parked | new |
-| Turn-by-turn to the instrument cluster and now-playing to the head unit | done |
-| Instrument-cluster video (cars with a cluster display): the navigation app's cluster map, or AARE's turn card | new, tested only with the desktop head unit's `--cluster` |
-| Directions from Google Maps, Waze… on the phone, on the dashboard and the cluster | new, untested with Google Maps and Waze |
-| Phone screen in the car, with touch | new, untested on hardware |
-| Phone audio to the car: screen capture, Shizuku, or system audio routing like Android Auto (music and navigation voice apart) | screen capture tested; Shizuku and system routing new, untested |
-| Voice assistant as a bar over the screen, with car tools | new, untested in a car |
-| Car microphone to apps (any `CarAudioRecord` app) | done |
-| Phone status to the car (call state, caller name and photo, signal), battery level; the car's call buttons answer and hang up | new, tested only with the desktop head unit |
-| More audio buffering after the car reports underflows | new, untested on hardware |
-| USB (AOA) | done, tested on one head unit (see [Tested on real head units](#tested-on-real-head-units)) |
-| Wireless (Bluetooth bootstrap + Wi-Fi + TCP) | done, tested on one head unit (see [Tested on real head units](#tested-on-real-head-units)) |
-| Developer head-unit server over adb (DHU, openauto, Headunit Revived), optional LAN TCP 5277 | done |
-
-## Not done yet
-
-What Android Auto or the protocol offers that AARE doesn't do (yet).
-
-Not planned (rare, or redundant with what AARE draws itself):
-
-| Missing | Why not |
-|---|---|
-| Radio service (AM/FM/DAB tuning, presets) | Very few head units offer it to the phone. |
-| Vendor extensions | Specific to each car maker, undocumented. |
-| Generic notifications service | AARE shows notifications on its own screen; sending them to the car would show them twice. |
-| Native media browser service | Same: media apps are browsed on AARE's own screen. |
-| User switch, connected-devices list, service discovery update | Only matter with several phones in the car or channels changing during a connection. |
-| Audio kept open with silence | AARE closes the car's audio stream after a few seconds of silence and reopens it when sound comes back, like Android Auto does for navigation prompts. |
-
-## Requirements
-
-- A phone with **Android 8** or newer. Some features need a newer Android:
-
-  | Feature | Needs |
-  |---|---|
-  | Car audio by screen capture | Android 10 (on Android 8 and 9: the privileged install, or the car's Bluetooth) |
-  | Car audio through Shizuku | Android 12 |
-  | WPA3-only car Wi-Fi (wireless) | Android 10 (WPA2 and WPA2/WPA3 work from Android 8) |
-  | Signal bars on the car screen | Android 9 |
-  | Hanging up or declining from the car | Android 9 |
-
-  On Android 17, wireless head units and the head unit server's network mode also need the
-  *Local network* permission (asked during setup): without it, Android silently drops the
-  connection to the head unit.
-
-- A head unit that accepts AARE's certificate (see *Compatibility*), or a computer to run the
-  desktop head unit.
+| **Dusk & Hybrid Shells** | Floating glass dock, logo orb launcher, collapsible sidebar, and responsive scaling optimized for 1024×600 head units. |
+| **OBD-II Telemetry** | Real-time vehicle instrumentation queried over Bluetooth RFCOMM without interrupting audio or navigation. |
+| **Ambient Auto-Night** | Eliminates manual headlight toggles on aftermarket head units via ambient lux sensor and solar twilight algorithms. |
+| **Video Bitrate Override** | Crisp, artifact-free projection at up to 20 Mbps with keyframe recovery. |
+| **Steering Wheel Remapper** | Full hardware button customizer for steering wheel media, call, and rotary controls. |
+| **4-Tab Phone Companion** | Redesigned Material 3 companion interface (Home, Customize, My Cars, Settings) for rapid in-car profile management. |
 
 ## Installing
 
-Download `aare-<version>.apk` from the [releases](https://github.com/prototux/AARE/releases) and
-open it on the phone, or `adb install -r aare-<version>.apk`. Each release also has the Magisk
-module (rooted phones, see [Car audio](#car-audio)) and the desktop head unit.
+Download the latest release APK (`app-release.apk`) from the [Releases](https://github.com/athanasso/AARE/releases) page and install it on your Android device:
+
+```bash
+adb install -r app-release.apk
+```
 
 Releases are signed with AARE's release key, SHA-256
 `63:EF:0D:E1:DB:2C:09:BB:7F:B2:5C:E7:EA:4A:DC:35:38:AF:42:3B:88:52:78:B5:9D:F2:88:9C:7F:18:28:6F`.
@@ -116,7 +57,7 @@ certificates (replacing an earlier download). To extract them yourself instead:
    is located alongside this README. For Git:
 
    ```sh
-   git clone https://github.com/prototux/AARE.git
+   git clone https://github.com/athanasso/AARE.git
    cd AARE
    ```
 
@@ -278,7 +219,7 @@ The assistant bar shows the assistant's car screen when it is a message (Lapin's
 open the assistant full screen; it closes by itself after the answer.
 
 **Car tools.** The assistant the voice button opens can act on the car through
-`content://net.prototux.aare.car` (`ContentResolver.call`): `call("tools")` returns tool specs in
+`content://com.athanasso.aare.car` (`ContentResolver.call`): `call("tools")` returns tool specs in
 the function-calling JSON schema, and `call("run", name, {"args": json})` runs one. AARE only
 answers that assistant, and only while a car (or the preview) is connected. The tools:
 

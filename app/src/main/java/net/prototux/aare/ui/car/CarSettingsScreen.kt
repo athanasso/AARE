@@ -326,7 +326,7 @@ private fun DuskSettingsScreen(settings: Settings, modifier: Modifier, onLayoutC
                     item { SwitchRow(stringResource(R.string.setup_switch_message_notifications), banners) { banners = it; settings.messageBanners = it } }
                 }
                 SettingsCategory.ABOUT -> {
-                    item { Text("F-Auto", style = MaterialTheme.typography.headlineSmall) }
+                    item { Text("AARE Cockpit", style = MaterialTheme.typography.headlineSmall) }
                     item {
                         Text(
                             stringResource(R.string.setup_about_text, net.prototux.aare.BuildConfig.VERSION_NAME),

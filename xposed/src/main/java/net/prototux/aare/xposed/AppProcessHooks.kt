@@ -41,7 +41,7 @@ object AppProcessHooks {
         val hostInfo = runCatching { cl.loadClass("androidx.car.app.HostInfo") }.getOrNull() ?: return
         val method = runCatching { hostValidator.getDeclaredMethod("isValidHost", hostInfo) }.getOrNull() ?: return
         xposed.hook(method).intercept { chain ->
-            if (hostPackage(chain.getArg(0)) == ModuleMain.AARE_PACKAGE) true else chain.proceed()
+            if (ModuleMain.isAarePackage(hostPackage(chain.getArg(0)))) true else chain.proceed()
         }
     }
 
@@ -77,7 +77,11 @@ object AppProcessHooks {
         runCatching {
             val ctx = Class.forName("android.app.ActivityThread")
                 .getMethod("currentApplication").invoke(null) as android.content.Context
-            ctx.packageManager.getApplicationInfo(ModuleMain.AARE_PACKAGE, 0).uid
+            try {
+                ctx.packageManager.getApplicationInfo(ModuleMain.AARE_PACKAGE, 0).uid
+            } catch (_: Exception) {
+                ctx.packageManager.getApplicationInfo(ModuleMain.LEGACY_AARE_PACKAGE, 0).uid
+            }
         }.getOrDefault(-1)
     }
 }

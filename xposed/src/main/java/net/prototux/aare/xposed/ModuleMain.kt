@@ -22,7 +22,7 @@ class ModuleMain : XposedModule() {
         // One classloader per process is enough; skip extra loads of the same package.
         if (!param.isFirstPackage) return
         // Don't hook AARE's own process: it already knows it is the host.
-        if (param.packageName == AARE_PACKAGE) return
+        if (isAarePackage(param.packageName)) return
         AppProcessHooks.install(this, param)
         MediaHooks.install(this, param)
     }
@@ -32,6 +32,10 @@ class ModuleMain : XposedModule() {
     }
 
     companion object {
-        const val AARE_PACKAGE = "net.prototux.aare"
+        const val AARE_PACKAGE = "com.athanasso.aare"
+        const val LEGACY_AARE_PACKAGE = "net.prototux.aare"
+
+        fun isAarePackage(pkg: String?): Boolean =
+            pkg == AARE_PACKAGE || pkg == LEGACY_AARE_PACKAGE
     }
 }

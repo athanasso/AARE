@@ -866,7 +866,7 @@ private fun UpdateBanner() {
     }
 }
 
-/** F-Auto's own brand look (the pink→indigo gradient from the Dusk/phone mockups) — fixed, not tied to whichever car-screen theme is picked. */
+/** AARE Cockpit brand look (the pink→indigo gradient from the Dusk/phone mockups) — fixed, not tied to whichever car-screen theme is picked. */
 private object Brand {
     val pink = Color(0xFFFF4D63)
     val blue = Color(0xFF8B97FF)

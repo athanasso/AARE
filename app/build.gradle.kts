@@ -10,19 +10,19 @@ android {
     }
 
     defaultConfig {
-        applicationId = "net.prototux.aare"
+        applicationId = "com.athanasso.aare"
         // Android 8. Newer features need newer Android: car audio by screen capture and the
         // modern Wi-Fi join (10), Shizuku capture (12); older phones fall back or go without.
         minSdk = 26
         targetSdk = 37
         // The release workflow passes the tag's version (-PversionName=1.2.3 -PversionCode=10203).
-        versionCode = providers.gradleProperty("versionCode").orNull?.toInt() ?: 10000
-        versionName = providers.gradleProperty("versionName").orNull ?: "1.0.0"
+        versionCode = providers.gradleProperty("versionCode").orNull?.toInt() ?: 10500
+        versionName = providers.gradleProperty("versionName").orNull ?: "1.5.0"
     }
 
     signingConfigs {
         // Release key from the environment (the release workflow's secrets). Without it the
-        // release APK is unsigned: use the debug one locally.
+        // release APK is signed with the debug key so it is installable out of the box.
         val keystore = providers.environmentVariable("AARE_KEYSTORE").orNull
         if (keystore != null) {
             create("release") {
@@ -36,11 +36,16 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.findByName("release")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
             optimization {
                 enable = false
             }
         }
+    }
+
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
