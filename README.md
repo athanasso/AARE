@@ -36,10 +36,8 @@ Download the latest release APK (`app-release.apk`) from the [Releases](https://
 adb install -r app-release.apk
 ```
 
-Releases are signed with AARE's release key, SHA-256
-`63:EF:0D:E1:DB:2C:09:BB:7F:B2:5C:E7:EA:4A:DC:35:38:AF:42:3B:88:52:78:B5:9D:F2:88:9C:7F:18:28:6F`.
-Builds you make yourself are signed with your own debug key, so switching between the two needs
-an uninstall first.
+Prebuilt APKs from GitHub Releases are signed and ready to install directly on your device.
+Builds you compile yourself locally are signed with your debug key; uninstall any previous version before switching between different signing keys.
 
 ## AA Key extraction
 
@@ -407,7 +405,7 @@ A Car App Library app decides which hosts it accepts (`HostValidator`).
   ```kotlin
   HostValidator.Builder(context)
       .addAllowedHosts(androidx.car.app.R.array.hosts_allowlist_sample)
-      .addAllowedHost("net.prototux.aare", "<sha256 of AARE's signing certificate>")
+      .addAllowedHost("com.athanasso.aare", "<sha256 of AARE Cockpit signing certificate>")
       .build()
   ```
 
@@ -475,9 +473,15 @@ in Android Studio works too.
 
 Bug reports and pull requests are welcome. Reports from real cars are the most useful: say which
 head unit (make, model, year, or the open-source software it runs), USB or wireless, and attach
-`adb logcat` output around the connection (`adb logcat | grep -i aare`).
+`adb logcat` output around the connection (`adb logcat | grep -i com.athanasso.aare`).
 
 Before sending a pull request, run `./build.sh :aap:test` and build the app.
+
+## Acknowledgements & Upstream
+
+**AARE Cockpit** is maintained by [@athanasso](https://github.com/athanasso), building upon the open-source engineering of:
+- [prototux/AARE](https://github.com/prototux/AARE) – original Android Auto projection architecture and AAP stack.
+- [malashhab/F-Auto](https://github.com/malashhab/F-Auto) – UI layout concepts and app catalog enhancements.
 
 ## Thanks
 
