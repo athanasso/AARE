@@ -250,6 +250,10 @@ class CarRuntime(
 
     /** The car's own day/night signal, if it sent one. */
     private var carNight: Boolean? = null
+    /** Ambient light detector for head units without an illumination wire. */
+    private val lightDetector = net.prototux.aare.car.AmbientLightDetector(context, scope)
+    /** Live OBD-II engine telemetry manager (ELM327 Bluetooth). */
+    private val obdManager = net.prototux.aare.car.obd.ObdManager(context, scope)
     /** The head unit's driver position. */
     var rightHandDrive = false
         set(v) { field = v; applyScreenSettings() }
@@ -274,7 +278,12 @@ class CarRuntime(
         val night = when (settings.carTheme) {
             Settings.THEME_DARK -> true
             Settings.THEME_LIGHT -> false
-            else -> carNight ?: true
+            else -> when (settings.autoNightSource) {
+                Settings.AUTO_NIGHT_SENSOR -> lightDetector.isNight.value
+                Settings.AUTO_NIGHT_SUNSET -> net.prototux.aare.car.AmbientLightDetector.calculateTimeBasedNight()
+                Settings.AUTO_NIGHT_CAR -> carNight ?: true
+                else -> carNight ?: lightDetector.isNight.value
+            }
         }
         if (ui.night != night) {
             ui.night = night
@@ -312,8 +321,11 @@ class CarRuntime(
 
     private val settingsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
-            "car_theme", "theme_style", "rail_position", "rail_auto_hide", "car_style", "car_layout", "dark_bar", "ignore_driving", "home_map_music_default", "music_widget_size" -> main.post { applyScreenSettings() }
+            "car_theme", "auto_night_source", "theme_style", "rail_position", "rail_auto_hide", "car_style", "car_layout", "dark_bar", "ignore_driving", "home_map_music_default", "music_widget_size" -> main.post { applyScreenSettings() }
             "wallpaper" -> main.post { ui.wallpaper = ""; applyScreenSettings() }
+            "obd_enabled", "obd_device_address" -> {
+                if (settings.obdEnabled) obdManager.start(settings.obdDeviceAddress) else obdManager.stop()
+            }
             // Apps shown or hidden from the phone: update the car's app list now.
             "hidden_apps", "phone_screen", "assistant_pkg", "app_order" -> main.post { refreshApps() }
         }
@@ -327,6 +339,13 @@ class CarRuntime(
 
     fun start() {
         running += this
+        lightDetector.start()
+        if (settings.obdEnabled) obdManager.start(settings.obdDeviceAddress)
+        scope.launch {
+            lightDetector.isNight.collect {
+                if (settings.carTheme == Settings.THEME_AUTO) main.post { applyScreenSettings() }
+            }
+        }
         // Messages, directions and now playing all need the listener bound: make sure it is.
         CarNotificationListener.rebind(context)
         applyScreenSettings()
@@ -359,6 +378,8 @@ class CarRuntime(
     }
 
     fun stop() {
+        obdManager.stop()
+        lightDetector.stop()
         running.remove(this)
         runCatching { context.unregisterReceiver(packageReceiver) }
         settings.unregisterListener(settingsListener)

@@ -439,10 +439,11 @@ class CarSession(
         val ch = video ?: return
         // lateinit: the sink below needs to know whether its encoder is still the current one.
         lateinit var enc: VideoEncoder
-        enc = VideoEncoder(w, h, fps, kind = videoCodec, sink = object : VideoEncoder.Sink {
+        val targetBitrate = if (settings.videoBitrateMbps > 0) settings.videoBitrateMbps * 1_000_000 else VideoEncoder.defaultBitrate(w, h, fps)
+        enc = VideoEncoder(w, h, fps, kind = videoCodec, bitrate = targetBitrate, sink = object : VideoEncoder.Sink {
             private var frames = 0
             // Per stream: a restart (new config, encoder error) starts again from the full bitrate.
-            private val abr = BitrateController(VideoEncoder.defaultBitrate(w, h, fps)) { encoder?.setBitrate(it) }
+            private val abr = BitrateController(targetBitrate) { encoder?.setBitrate(it) }
             override fun onCodecConfig(data: ByteArray, offset: Int, length: Int) {
                 Log.i(TAG, "codec config: $length bytes")
                 ch.sendCodecConfig(data, offset, length)
@@ -543,6 +544,7 @@ class CarSession(
     private val homeKey = LongPressKey(onPress = { runtime.actions.goHome() }, onLongPress = ::exitToCar)
 
     private fun onKey(code: Int, down: Boolean, longPress: Boolean) {
+        if (KeyRemapper.handle(code, down, longPress, runtime, media, settings)) return
         when (code) {
             KeyEvent.KEYCODE_HOME -> homeKey.onKey(down, longPress)
             KeyEvent.KEYCODE_BACK -> if (!down) back()

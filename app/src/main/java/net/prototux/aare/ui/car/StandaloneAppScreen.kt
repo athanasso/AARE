@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import net.prototux.aare.R
@@ -63,6 +65,7 @@ internal fun StandaloneAppScreen(
     val context = LocalContext.current
     val launcher = remember(packageName) { AppLauncher(context) }
     var started by remember(packageName) { mutableStateOf(false) }
+    var aspectFit by remember(packageName) { mutableStateOf(false) }
     val paused = driving && !navigation
 
     DisposableEffect(packageName) {
@@ -87,8 +90,9 @@ internal fun StandaloneAppScreen(
         if (launcher.view(uri, packageName)) runtime.pendingNavigateUri = null
     }
 
-    Box(modifier.background(Color.Black)) {
+    Box(modifier.background(Color.Black), contentAlignment = Alignment.Center) {
         if (!paused) {
+            val viewMod = if (aspectFit) Modifier.aspectRatio(16f / 9f).fillMaxSize() else Modifier.fillMaxSize()
             androidx.compose.ui.viewinterop.AndroidView(
                 factory = { ctx ->
                     TextureView(ctx).apply {
@@ -117,8 +121,25 @@ internal fun StandaloneAppScreen(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxSize(),
+                modifier = viewMod,
             )
+            if (!navigation) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .clickable { aspectFit = !aspectFit }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        text = if (aspectFit) "16:9" else "FILL",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White.copy(alpha = 0.85f),
+                    )
+                }
+            }
             if (!navigation) {
                 Text(
                     stringResource(R.string.standalone_not_native),

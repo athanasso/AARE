@@ -1004,6 +1004,9 @@ private fun ConnectionSettings(settings: Settings, refresh: Int) {
     var btAddr by remember { mutableStateOf(settings.phoneBluetoothAddress) }
     var connectNowTarget by remember { mutableStateOf(settings.wirelessConnectNowTarget) }
     var compatMode by remember { mutableStateOf(settings.wirelessCompatMode) }
+    var videoBitrate by remember { mutableIntStateOf(settings.videoBitrateMbps) }
+    var obdEnabled by remember { mutableStateOf(settings.obdEnabled) }
+    var obdAddr by remember { mutableStateOf(settings.obdDeviceAddress) }
     val ctx = LocalContext.current
     val pinned = remember { net.prototux.aare.PinnedHeadUnits(ctx) }
     var pins by remember { mutableStateOf(pinned.all) }
@@ -1054,6 +1057,17 @@ private fun ConnectionSettings(settings: Settings, refresh: Int) {
                     ProjectionService.startWireless(ctx, device.address)
                 }
             }) { Text("Connect now") }
+            Spacer(Modifier.height(12.dp))
+            Toggle("ELM327 OBD-II live telemetry", "Stream real RPM, speed, coolant temp and voltage to cockpit", obdEnabled) {
+                obdEnabled = it; settings.obdEnabled = it
+            }
+            if (obdEnabled) {
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(obdAddr, { obdAddr = it; settings.obdDeviceAddress = it.trim() }, Modifier.fillMaxWidth(),
+                    label = { Text("OBD Bluetooth address (optional)") },
+                    supportingText = { Text("Leave empty to auto-detect paired OBD-II / ELM327 adapter") },
+                    singleLine = true)
+            }
         }
         Section(stringResource(R.string.setup_section_updates)) {
             Toggle(stringResource(R.string.setup_toggle_updates_title), stringResource(R.string.setup_toggle_updates_subtitle), checkUpdates) {
@@ -1074,6 +1088,16 @@ private fun ConnectionSettings(settings: Settings, refresh: Int) {
                 maxH = it.toInt(); settings.maxVideoHeight = maxH
             }
             Text(stringResource(R.string.setup_hint_lower_resolution), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
+            Choices("Video bitrate", listOf(
+                "0" to "Auto (Adaptive)",
+                "8" to "8 Mbps (Standard HD)",
+                "12" to "12 Mbps (High Detail)",
+                "16" to "16 Mbps (Ultra Clear)",
+                "20" to "20 Mbps (Maximum 1024x600)",
+            ), "$videoBitrate") {
+                videoBitrate = it.toInt(); settings.videoBitrateMbps = videoBitrate
+            }
             Toggle(stringResource(R.string.setup_toggle_force_h264_title), stringResource(R.string.setup_toggle_force_h264_subtitle), forceH264) { forceH264 = it; settings.forceH264 = it }
         }
         Section(stringResource(R.string.setup_section_your_cars)) {
@@ -1231,6 +1255,7 @@ private fun CarScreenSettings(settings: Settings, refresh: Int, onStyleChange: (
     }
     var calendar by remember { mutableStateOf(settings.showCalendar) }
     var autoSpeaker by remember { mutableStateOf(settings.autoSpeakerOnCall) }
+    var autoNight by remember { mutableStateOf(settings.autoNightSource) }
     @Suppress("UNUSED_EXPRESSION") refresh
     val touch = AndroidSettings.Secure.getString(ctx.contentResolver, AndroidSettings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty()
         .split(':').any { ComponentName.unflattenFromString(it) == ComponentName(ctx, MirrorTouchService::class.java) }
@@ -1238,6 +1263,15 @@ private fun CarScreenSettings(settings: Settings, refresh: Int, onStyleChange: (
         Section(stringResource(R.string.setup_section_look)) {
             Choices(stringResource(R.string.setup_choice_colors), listOf(Settings.THEME_AUTO to stringResource(R.string.setup_choice_colors_auto), Settings.THEME_DARK to stringResource(R.string.setup_choice_dark), Settings.THEME_LIGHT to stringResource(R.string.setup_choice_light)), theme) {
                 theme = it; settings.carTheme = it
+            }
+            if (theme == Settings.THEME_AUTO) {
+                Spacer(Modifier.height(8.dp))
+                Choices("Auto night detection", listOf(
+                    Settings.AUTO_NIGHT_HYBRID to "Phone Sensor + Time (Recommended)",
+                    Settings.AUTO_NIGHT_SENSOR to "Phone Light Sensor Only",
+                    Settings.AUTO_NIGHT_SUNSET to "Sunrise / Sunset Time",
+                    Settings.AUTO_NIGHT_CAR to "Car ILL Wire Signal Only",
+                ), autoNight) { autoNight = it; settings.autoNightSource = it }
             }
             Text(stringResource(R.string.setup_choice_colors_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))

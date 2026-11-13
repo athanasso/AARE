@@ -1,6 +1,7 @@
 package net.prototux.aare.ui.car
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -255,6 +256,48 @@ fun AppIcon(app: CarAppEntry, sizeDp: Int) {
 }
 
 @Composable
+fun AudioVisualizerBar(modifier: Modifier = Modifier) {
+    val transition = androidx.compose.animation.core.rememberInfiniteTransition(label = "visualizer")
+    val h1 by transition.animateFloat(
+        initialValue = 0.35f, targetValue = 0.95f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(420, easing = androidx.compose.animation.core.LinearEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "h1",
+    )
+    val h2 by transition.animateFloat(
+        initialValue = 0.85f, targetValue = 0.25f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(350, easing = androidx.compose.animation.core.LinearEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "h2",
+    )
+    val h3 by transition.animateFloat(
+        initialValue = 0.25f, targetValue = 1.0f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(490, easing = androidx.compose.animation.core.LinearEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "h3",
+    )
+    val h4 by transition.animateFloat(
+        initialValue = 0.65f, targetValue = 0.35f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(390, easing = androidx.compose.animation.core.LinearEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "h4",
+    )
+    val h5 by transition.animateFloat(
+        initialValue = 0.45f, targetValue = 0.9f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(450, easing = androidx.compose.animation.core.LinearEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "h5",
+    )
+
+    Row(
+        modifier = modifier.height(24.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        val color = MaterialTheme.colorScheme.primary
+        listOf(h1, h2, h3, h4, h5).forEach { h ->
+            Box(
+                Modifier
+                    .width(3.5.dp)
+                    .height((24 * h).coerceAtLeast(4f).dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(color),
+            )
+        }
+    }
+}
+
+@Composable
 internal fun MediaCard(state: CarUiState, actions: CarActions, compact: Boolean, modifier: Modifier) {
     val np = state.nowPlaying
     val media = state.app(np?.appId ?: state.activeMediaAppId)
@@ -284,14 +327,21 @@ internal fun MediaCard(state: CarUiState, actions: CarActions, compact: Boolean,
                 Art(np, 80)
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) { content() }
+                if (np?.playing == true) {
+                    AudioVisualizerBar(Modifier.padding(end = 12.dp))
+                }
                 MediaButtons(np, actions)
             }
         } else {
             Column(Modifier.fillMaxSize().padding(24.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Art(np, 72)
                     Spacer(Modifier.width(16.dp))
                     if (media != null) AppIcon(media, 28)
+                    Spacer(Modifier.weight(1f))
+                    if (np?.playing == true) {
+                        AudioVisualizerBar()
+                    }
                 }
                 Spacer(Modifier.weight(1f))
                 content()

@@ -156,42 +156,61 @@ internal fun CockpitCard(
                 }
             }
 
-            // Bottom row: Secondary vehicle sensors (Fuel/RPM/Temp)
+            // Bottom row: Secondary vehicle sensors (Fuel/RPM/Coolant/Voltage)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val rpm = car.rpm?.value
+                val coolant = car.coolantTempC?.value
+                val volts = car.batteryVoltage?.value
                 val fuel = car.fuel?.value
                 val temp = car.environment?.value?.temperatureC
 
-                if (rpm != null && rpm > 0f) {
-                    Text(
-                        text = "%.0f RPM".format(rpm),
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else if (fuel?.levelPercent != null) {
-                    Text(
-                        text = "FUEL ${fuel.levelPercent}%" + (fuel.rangeKm?.let { " · $it km" } ?: ""),
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = if (fuel.low == true) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    Text(
-                        text = "DIAGNOSTICS OK",
-                        style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 0.8.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (rpm != null && rpm > 0f) {
+                        Text(
+                            text = "%.0f RPM".format(rpm),
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else if (fuel?.levelPercent != null) {
+                        Text(
+                            text = "FUEL ${fuel.levelPercent}%",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            color = if (fuel.low == true) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Text(
+                            text = "TELEMETRY",
+                            style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 0.8.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
 
-                if (temp != null) {
-                    Text(
-                        text = "%.1f°C".format(temp),
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (coolant != null) {
+                        Text(
+                            text = "%.0f°C".format(coolant),
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold),
+                            color = if (coolant > 105f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        )
+                    } else if (temp != null) {
+                        Text(
+                            text = "%.1f°C".format(temp),
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (volts != null) {
+                        Text(
+                            text = "%.1fV".format(volts),
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold),
+                            color = if (volts < 11.8f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }

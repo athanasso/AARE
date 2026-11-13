@@ -68,6 +68,9 @@ private fun ClassicSettingsScreen(settings: Settings, modifier: Modifier, onLayo
     var passenger by remember { mutableStateOf(settings.ignoreDriving) }
     var allowMoving by remember { mutableStateOf(settings.allowMovingStandalone) }
     var autoSpeaker by remember { mutableStateOf(settings.autoSpeakerOnCall) }
+    var autoNight by remember { mutableStateOf(settings.autoNightSource) }
+    var bitrate by remember { mutableStateOf(settings.videoBitrateMbps) }
+    var obd by remember { mutableStateOf(settings.obdEnabled) }
     LazyColumn(
         modifier.background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 24.dp),
@@ -94,6 +97,38 @@ private fun ClassicSettingsScreen(settings: Settings, modifier: Modifier, onLayo
                 theme = it; settings.carTheme = it
             }
         }
+        if (theme == Settings.THEME_AUTO) {
+            item {
+                Choice(
+                    "Auto Night Detection",
+                    listOf(
+                        Settings.AUTO_NIGHT_HYBRID to "Phone Sensor + Time (Recommended)",
+                        Settings.AUTO_NIGHT_SENSOR to "Phone Light Sensor Only",
+                        Settings.AUTO_NIGHT_SUNSET to "Sunrise / Sunset Time",
+                        Settings.AUTO_NIGHT_CAR to "Car ILL Wire Signal Only",
+                    ),
+                    autoNight,
+                ) {
+                    autoNight = it; settings.autoNightSource = it
+                }
+            }
+        }
+        item {
+            Choice(
+                "Video Bitrate (Encoder Quality)",
+                listOf(
+                    "0" to "Auto (Adaptive)",
+                    "8" to "8 Mbps (Standard HD)",
+                    "12" to "12 Mbps (High Detail)",
+                    "16" to "16 Mbps (Ultra Clear)",
+                    "20" to "20 Mbps (Maximum 1024x600)",
+                ),
+                bitrate.toString(),
+            ) {
+                bitrate = it.toIntOrNull() ?: 0; settings.videoBitrateMbps = bitrate
+            }
+        }
+        item { SwitchRow("ELM327 Bluetooth OBD-II Telemetry", obd) { obd = it; settings.obdEnabled = it } }
         item {
             Choice(stringResource(R.string.setup_choice_bar), railChoiceOptions(), rail) {
                 rail = it; applyRailChoice(settings, it)
@@ -185,6 +220,9 @@ private fun DuskSettingsScreen(settings: Settings, modifier: Modifier, onLayoutC
     var allowMoving by remember { mutableStateOf(settings.allowMovingStandalone) }
     var autoSpeaker by remember { mutableStateOf(settings.autoSpeakerOnCall) }
     var palette by remember { mutableStateOf(settings.themeStyle) }
+    var autoNight by remember { mutableStateOf(settings.autoNightSource) }
+    var bitrate by remember { mutableStateOf(settings.videoBitrateMbps) }
+    var obd by remember { mutableStateOf(settings.obdEnabled) }
     Row(modifier.background(MaterialTheme.colorScheme.background).padding(20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(
             Modifier.width(240.dp).fillMaxHeight().clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceContainer).padding(10.dp),
@@ -214,6 +252,37 @@ private fun DuskSettingsScreen(settings: Settings, modifier: Modifier, onLayoutC
                     item {
                         Choice(stringResource(R.string.setup_choice_colors), listOf(Settings.THEME_AUTO to stringResource(R.string.setup_choice_colors_auto), Settings.THEME_DARK to stringResource(R.string.setup_choice_dark), Settings.THEME_LIGHT to stringResource(R.string.setup_choice_light)), theme) {
                             theme = it; settings.carTheme = it
+                        }
+                    }
+                    if (theme == Settings.THEME_AUTO) {
+                        item {
+                            Choice(
+                                "Auto Night Detection",
+                                listOf(
+                                    Settings.AUTO_NIGHT_HYBRID to "Phone Sensor + Time (Recommended)",
+                                    Settings.AUTO_NIGHT_SENSOR to "Phone Light Sensor Only",
+                                    Settings.AUTO_NIGHT_SUNSET to "Sunrise / Sunset Time",
+                                    Settings.AUTO_NIGHT_CAR to "Car ILL Wire Signal Only",
+                                ),
+                                autoNight,
+                            ) {
+                                autoNight = it; settings.autoNightSource = it
+                            }
+                        }
+                    }
+                    item {
+                        Choice(
+                            "Video Bitrate (Encoder Quality)",
+                            listOf(
+                                "0" to "Auto (Adaptive)",
+                                "8" to "8 Mbps (Standard HD)",
+                                "12" to "12 Mbps (High Detail)",
+                                "16" to "16 Mbps (Ultra Clear)",
+                                "20" to "20 Mbps (Maximum 1024x600)",
+                            ),
+                            bitrate.toString(),
+                        ) {
+                            bitrate = it.toIntOrNull() ?: 0; settings.videoBitrateMbps = bitrate
                         }
                     }
                     item {
@@ -249,6 +318,7 @@ private fun DuskSettingsScreen(settings: Settings, modifier: Modifier, onLayoutC
                 }
                 SettingsCategory.CONNECTION -> {
                     item { ConnectionChoice(settings) }
+                    item { SwitchRow("ELM327 Bluetooth OBD-II Telemetry", obd) { obd = it; settings.obdEnabled = it } }
                 }
                 SettingsCategory.DRIVING -> {
                     item { SwitchRow(stringResource(R.string.setup_switch_passenger), passenger) { passenger = it; settings.ignoreDriving = it } }

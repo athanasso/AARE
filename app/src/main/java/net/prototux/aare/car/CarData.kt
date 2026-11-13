@@ -75,6 +75,12 @@ object CarData {
         val tollCardPresent: Timed<Boolean>? = null,
         /** Raw OBD-II trouble codes, as the car sends them. */
         val diagnostics: Timed<ByteArray>? = null,
+        /** Engine coolant temperature in Celsius (from OBD-II or vehicle sensor). */
+        val coolantTempC: Timed<Float>? = null,
+        /** Control module / battery voltage in Volts. */
+        val batteryVoltage: Timed<Float>? = null,
+        /** Intake manifold air temperature in Celsius. */
+        val intakeTempC: Timed<Float>? = null,
     ) {
         fun has(type: SensorType) = type in advertised
 
@@ -207,5 +213,21 @@ object CarData {
         }
         if (changed.isNotEmpty()) for (l in listeners) runCatching { l.onCarData(next, changed) }
         return changed
+    }
+
+    /** Direct injection from an OBD-II Bluetooth adapter (ELM327). */
+    fun updateObdData(rpm: Float? = null, speedKmh: Float? = null, coolantC: Float? = null, voltage: Float? = null, intakeC: Float? = null) {
+        val now = System.currentTimeMillis()
+        val next = synchronized(lock) {
+            var s = _state.value
+            if (rpm != null) s = s.copy(rpm = Timed(rpm, now))
+            if (speedKmh != null) s = s.copy(speed = Timed(Speed(speedKmh / 3.6f, s.speed?.value?.cruiseEngaged, s.speed?.value?.cruiseSetSpeed), now))
+            if (coolantC != null) s = s.copy(coolantTempC = Timed(coolantC, now))
+            if (voltage != null) s = s.copy(batteryVoltage = Timed(voltage, now))
+            if (intakeC != null) s = s.copy(intakeTempC = Timed(intakeC, now))
+            _state.value = s
+            s
+        }
+        for (l in listeners) runCatching { l.onCarData(next, setOf(Kind.RPM, Kind.SPEED)) }
     }
 }

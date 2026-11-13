@@ -127,6 +127,11 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("force_h264", false)
         set(v) = prefs.edit { putBoolean("force_h264", v) }
 
+    /** Custom video bitrate in Mbps: 0 = automatic default, or 4, 8, 12, 16, 20 Mbps. */
+    var videoBitrateMbps: Int
+        get() = prefs.getInt("video_bitrate_mbps", 0)
+        set(v) = prefs.edit { putInt("video_bitrate_mbps", v) }
+
     /** Where the car screen's bar goes: next to the driver ([RAIL_AUTO]), [RAIL_LEFT], [RAIL_RIGHT] or [RAIL_BOTTOM]. */
     var railPosition: String
         get() = prefs.getString("rail_position", null)
@@ -195,6 +200,11 @@ class Settings(context: Context) {
         get() = prefs.getString("car_theme", THEME_AUTO) ?: THEME_AUTO
         set(v) = prefs.edit { putString("car_theme", v) }
 
+    /** Source for auto day/night detection: [AUTO_NIGHT_HYBRID] (default), [AUTO_NIGHT_SENSOR], [AUTO_NIGHT_CAR], or [AUTO_NIGHT_SUNSET]. */
+    var autoNightSource: String
+        get() = prefs.getString("auto_night_source", AUTO_NIGHT_HYBRID) ?: AUTO_NIGHT_HYBRID
+        set(v) = prefs.edit { putString("auto_night_source", v) }
+
     /** Cockpit palette: [THEME_STYLE_OBSIDIAN], [THEME_STYLE_PORSCHE], [THEME_STYLE_AMBER], [THEME_STYLE_RACING], [THEME_STYLE_CLASSIC]. */
     var themeStyle: String
         get() = prefs.getString("theme_style", THEME_STYLE_OBSIDIAN) ?: THEME_STYLE_OBSIDIAN
@@ -210,6 +220,16 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("car_audio", true)
         set(v) = prefs.edit { putBoolean("car_audio", v) }
 
+    /** Connect to paired ELM327 Bluetooth OBD-II adapter to stream live engine telemetry. */
+    var obdEnabled: Boolean
+        get() = prefs.getBoolean("obd_enabled", true)
+        set(v) = prefs.edit { putBoolean("obd_enabled", v) }
+
+    /** Specific Bluetooth MAC address of the OBD adapter, or empty to auto-detect. */
+    var obdDeviceAddress: String
+        get() = prefs.getString("obd_device_address", "") ?: ""
+        set(v) = prefs.edit { putString("obd_device_address", v) }
+
     /**
      * Switch calls to speakerphone as soon as they connect, while the car screen is up. AARE only
      * controls calls through Android's telephony; it never carries their audio itself (unlike
@@ -222,6 +242,12 @@ class Settings(context: Context) {
     var autoSpeakerOnCall: Boolean
         get() = prefs.getBoolean("auto_speaker_on_call", true)
         set(v) = prefs.edit { putBoolean("auto_speaker_on_call", v) }
+
+    /** Custom hardware / steering wheel key remapping. */
+    fun keyRemapFor(code: Int): String? = prefs.getString("key_remap_$code", null)
+    fun setKeyRemap(code: Int, action: String?) {
+        prefs.edit { if (action == null || action == "default") remove("key_remap_$code") else putString("key_remap_$code", action) }
+    }
 
     /**
      * The phone's own Bluetooth MAC, for the car's in-session pairing handshake. Android hides it
@@ -406,6 +432,10 @@ class Settings(context: Context) {
         const val THEME_AUTO = "auto"
         const val THEME_DARK = "dark"
         const val THEME_LIGHT = "light"
+        const val AUTO_NIGHT_HYBRID = "hybrid"
+        const val AUTO_NIGHT_SENSOR = "sensor"
+        const val AUTO_NIGHT_CAR = "car"
+        const val AUTO_NIGHT_SUNSET = "sunset"
         const val THEME_STYLE_OBSIDIAN = "obsidian"
         const val THEME_STYLE_PORSCHE = "porsche"
         const val THEME_STYLE_AMBER = "amber"
