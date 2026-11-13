@@ -89,8 +89,10 @@ internal class MediaDiscovery(private val context: Context, private val scope: C
         val car = HashSet<String>()
         val apps = services.values.mapNotNull { ri ->
             val si = ri.serviceInfo
+            if (si.packageName in net.prototux.aare.host.CarAppInfo.IGNORED_PACKAGES) return@mapNotNull null
             try {
                 val appInfo = pm.appInfo(si.packageName)
+                if (!net.prototux.aare.host.AndroidAutoApps.isCarMediaApp(pm, appInfo)) return@mapNotNull null
                 if (declaresCarMedia(pm, appInfo)) car += si.packageName
                 MediaApp(
                     packageName = si.packageName,

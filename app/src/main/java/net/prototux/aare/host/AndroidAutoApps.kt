@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.os.Build
 import android.provider.Telephony
 import androidx.core.graphics.drawable.toBitmap
 import net.prototux.aare.media.MediaDiscovery
@@ -31,23 +32,105 @@ object AndroidAutoApps {
     private const val META_CAR_APPLICATION = "com.google.android.gms.car.application"
     private val MESSAGING_USES = setOf("notification", "sms")
 
+    /** Known audio, podcast, radio, and streaming apps. */
+    fun isKnownMedia(pkg: String): Boolean {
+        val p = pkg.lowercase()
+        return p.contains("youtube.music") ||
+               p.contains("spotify") ||
+               p.contains("deezer") ||
+               p.contains("tidal") ||
+               p.contains("soundcloud") ||
+               p.contains("tunein") ||
+               p.contains("audible") ||
+               p.contains("pocketcasts") ||
+               p.contains("antennapod") ||
+               p.contains("poweramp") ||
+               p.contains("musicolet") ||
+               p.contains("apple.android.music") ||
+               p.contains("amazon.mp3") ||
+               p.contains("qobuz") ||
+               p.contains("pandora") ||
+               p.contains("vlc") ||
+               p.contains("plex") ||
+               p.contains("jellyfin") ||
+               p.contains("symfonium") ||
+               p.contains("stremio") ||
+               p.contains("audioplayer") ||
+               p.contains("musicplayer")
+    }
+
+    /** Known messaging, chat, and SMS packages. */
+    fun isKnownMessaging(pkg: String): Boolean {
+        val p = pkg.lowercase()
+        return p.contains("telegram") ||
+               p.contains("nagram") ||
+               p.contains("nekogram") ||
+               p.contains("whatsapp") ||
+               p.contains("signal") ||
+               p.contains("messenger") ||
+               p.contains("discord") ||
+               p.contains("viber") ||
+               p.contains("skype") ||
+               p.contains("teams") ||
+               p.contains("slack") ||
+               p.contains("threema") ||
+               p.contains("session") ||
+               p.contains("element") ||
+               p.contains("matrix") ||
+               p.contains("line") ||
+               p.contains("wechat") ||
+               p.contains("kakao") ||
+               p.contains("messaging") ||
+               p.contains("messages")
+    }
+
+    /** Verifies that a package is genuinely a car media player, not a system background service or random app. */
+    fun isCarMediaApp(pm: PackageManager, app: ApplicationInfo): Boolean {
+        val pkg = app.packageName
+        if (pkg in CarAppInfo.IGNORED_PACKAGES) return false
+        if (pkg in CarAppInfo.KNOWN_NAVIGATION_PACKAGES) return false
+        if (isKnownMessaging(pkg)) return false
+        // Must be a launchable application
+        if (pm.getLaunchIntentForPackage(pkg) == null) return false
+        if (isKnownMedia(pkg)) return true
+        val u = uses(pm, app)
+        if (u.any { it in MESSAGING_USES }) return false
+        if (Build.VERSION.SDK_INT >= 26 && app.category == ApplicationInfo.CATEGORY_AUDIO) return true
+        return u.contains("media")
+    }
+
     /**
      * Messaging apps, as Android Auto finds them: apps declaring `<uses name="notification"/>`
-     * (or `sms`), plus the default SMS app.
+     * (or `sms`), plus the default SMS app and apps with `CarAppService` messaging category.
      */
     fun messagingApps(context: Context, iconSizePx: Int = 128): List<PhoneApp> {
         val pm = context.packageManager
         val sms = runCatching { Telephony.Sms.getDefaultSmsPackage(context) }.getOrNull()
-        return declaring(context)
-            .filter { (app, uses) -> uses.any { it in MESSAGING_USES } || app.packageName == sms }
-            .map { (app, _) -> PhoneApp(app.packageName, app.loadLabel(pm).toString(), runCatching { app.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull()) }
-            .let { found ->
-                if (sms == null || found.any { it.packageName == sms }) found
-                else found + listOfNotNull(runCatching {
-                    val app = pm.getApplicationInfo(sms, 0)
-                    PhoneApp(sms, app.loadLabel(pm).toString(), runCatching { app.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull())
-                }.getOrNull())
+        val carMessaging = runCatching {
+            val intent = Intent(CarAppInfo.SERVICE_ACTION)
+            pm.queryIntentServices(intent, 0).mapNotNull { ri ->
+                val si = ri.serviceInfo ?: return@mapNotNull null
+                if (si.packageName in CarAppInfo.IGNORED_PACKAGES) return@mapNotNull null
+                val categories = buildSet { ri.filter?.categoriesIterator()?.forEach { add(it) } }
+                if (CarAppInfo.CATEGORY_MESSAGING in categories) si.packageName else null
             }
+        }.getOrDefault(emptyList())
+
+        return (declaring(context)
+            .filter { (app, uses) ->
+                app.packageName !in CarAppInfo.IGNORED_PACKAGES &&
+                app.packageName !in CarAppInfo.KNOWN_NAVIGATION_PACKAGES &&
+                (uses.any { it in MESSAGING_USES } || isKnownMessaging(app.packageName) || app.packageName == sms || app.packageName in carMessaging)
+            }
+            .map { (app, _) -> PhoneApp(app.packageName, app.loadLabel(pm).toString(), runCatching { app.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull()) }
+            + carMessaging.mapNotNull { pkg ->
+                if (pkg in CarAppInfo.IGNORED_PACKAGES || pkg in CarAppInfo.KNOWN_NAVIGATION_PACKAGES) return@mapNotNull null
+                runCatching {
+                    val app = pm.getApplicationInfo(pkg, 0)
+                    PhoneApp(pkg, app.loadLabel(pm).toString(), runCatching { app.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull())
+                }.getOrNull()
+            })
+            .distinctBy { it.packageName }
             .sortedBy { it.label.lowercase() }
     }
 
@@ -56,7 +139,8 @@ object AndroidAutoApps {
         val pm = context.packageManager
         return mediaPackages(pm).filter { it != context.packageName }.mapNotNull { pkg ->
             runCatching {
-                val app = pm.getApplicationInfo(pkg, 0)
+                val app = pm.getApplicationInfo(pkg, PackageManager.GET_META_DATA)
+                if (!isCarMediaApp(pm, app)) return@mapNotNull null
                 PhoneApp(pkg, app.loadLabel(pm).toString(), runCatching { app.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull())
             }.getOrNull()
         }.sortedBy { it.label.lowercase() }
@@ -66,8 +150,9 @@ object AndroidAutoApps {
     fun unsupported(context: Context, carApps: Collection<String>, iconSizePx: Int = 96): List<UnsupportedCarApp> {
         val pm = context.packageManager
         val shown = carApps.toSet() + mediaPackages(pm)
+        val messaging = messagingApps(context).map { it.packageName }.toSet()
         return declaring(context)
-            .filter { (app, uses) -> app.packageName !in shown && uses.none { it in MESSAGING_USES } }
+            .filter { (app, _) -> app.packageName !in shown && app.packageName !in messaging }
             .map { (app, uses) ->
                 UnsupportedCarApp(
                     packageName = app.packageName,

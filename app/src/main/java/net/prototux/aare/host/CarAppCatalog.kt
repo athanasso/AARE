@@ -18,11 +18,10 @@ data class CarAppInfo(
 ) {
     val packageName: String get() = service.packageName
     /**
-     * The NAVIGATION category is self-declared by the app, in its own manifest — nothing stops an
-     * app that isn't a map from claiming it to grab the dashboard's map widget (seen with Nuvio).
-     * So it's trusted only for packages in [KNOWN_NAVIGATION_PACKAGES], actual map/navigation apps.
+     * The NAVIGATION category is self-declared by the app, in its own manifest.
+     * Trusted for known navigation packages or any Car App Library app declaring the NAVIGATION category.
      */
-    val isNavigation: Boolean get() = CATEGORY_NAVIGATION in categories && packageName in KNOWN_NAVIGATION_PACKAGES
+    val isNavigation: Boolean get() = CATEGORY_NAVIGATION in categories && packageName !in ROGUE_NAVIGATION_PACKAGES
 
     companion object {
         const val SERVICE_ACTION = "androidx.car.app.CarAppService"
@@ -30,13 +29,20 @@ data class CarAppInfo(
         const val CATEGORY_POI = "androidx.car.app.category.POI"
         const val CATEGORY_IOT = "androidx.car.app.category.IOT"
         const val CATEGORY_MESSAGING = "androidx.car.app.category.MESSAGING"
+        const val CATEGORY_SETTINGS = "androidx.car.app.category.SETTINGS"
         const val CATEGORY_CLUSTER = "androidx.car.app.category.FEATURE_CLUSTER"
         const val MIN_API_KEY = "androidx.car.app.minCarApiLevel"
+
+        /** Non-navigation apps that falsely declare the NAVIGATION category to grab the dashboard map slot. */
+        val ROGUE_NAVIGATION_PACKAGES = setOf(
+            "com.nuvio.app",
+        )
 
         /** Popular map/navigation apps allowed onto the dashboard's map widget. Ask to add more. */
         val KNOWN_NAVIGATION_PACKAGES = setOf(
             "com.google.android.apps.maps", // Google Maps
             "com.waze",                     // Waze
+            "app.vela",                     // Vela Maps
             "sa.hudhud.maps",                // HUDHUD Maps
             "com.sygic.aura",               // Sygic
             "com.here.app.maps",            // HERE WeGo
@@ -54,6 +60,18 @@ data class CarAppInfo(
             "com.google.android.gms",                 // Google Play Services
             "com.google.android.googlequicksearchbox",// Google App internal voice plate and dashboard services
             "com.android.systemui",                   // System UI
+            "com.android.bluetooth",                  // Bluetooth stack
+            "com.google.android.bluetooth",           // Google Bluetooth stack
+            "com.android.bluetoothmidiservice",       // Bluetooth MIDI
+            "com.android.shell",                      // Shell
+            "com.android.settings",                   // Android Settings
+            "com.google.android.settings",            // Pixel Settings
+            "com.zhiliaoapp.musically",               // TikTok
+            "com.ss.android.ugc.trill",               // TikTok
+            "gr.cosmote.myaccount.widget",            // Cosmote carrier app
+            "gr.cosmote.whatsup",                     // Cosmote What's Up carrier app
+            "com.instagram.android",                  // Instagram
+            "com.facebook.katana",                    // Facebook
         )
     }
 }
@@ -77,20 +95,26 @@ object CarAppCatalog {
             val categories = buildSet {
                 ri.filter?.categoriesIterator()?.forEach { add(it) }
             }
+            // Ignore settings-only sub-activities (e.g. YouTube Music's AndroidAutoCarAppServices)
+            if (CarAppInfo.CATEGORY_SETTINGS in categories && CarAppInfo.CATEGORY_NAVIGATION !in categories && CarAppInfo.CATEGORY_POI !in categories && CarAppInfo.CATEGORY_IOT !in categories) {
+                return@mapNotNull null
+            }
+            // Messaging apps belong under Messaging, not under CarAppCatalog
+            if (CarAppInfo.CATEGORY_MESSAGING in categories && CarAppInfo.CATEGORY_NAVIGATION !in categories && CarAppInfo.CATEGORY_POI !in categories && CarAppInfo.CATEGORY_IOT !in categories) {
+                return@mapNotNull null
+            }
+            // Real media apps (e.g. YouTube Music) belong in Media, not in CarAppCatalog
+            if (AndroidAutoApps.isKnownMedia(si.packageName)) {
+                return@mapNotNull null
+            }
             val minApi = appInfo.metaData?.getInt(CarAppInfo.MIN_API_KEY, 0)?.takeIf { it > 0 }
                 ?: si.metaData?.getInt(CarAppInfo.MIN_API_KEY, 0) ?: 0
-            val appLabel = appInfo.loadLabel(pm).toString()
-            val serviceLabel = si.loadLabel(pm).toString()
-            val cleanLabel = if (serviceLabel.isBlank() || serviceLabel == si.name || serviceLabel.endsWith("Service") || serviceLabel.endsWith("Module")) {
-                appLabel
-            } else {
-                serviceLabel
-            }
+            val label = appInfo.loadLabel(pm).toString()
             CarAppInfo(
                 service = ComponentName(si.packageName, si.name),
-                label = cleanLabel.ifBlank { appLabel },
-                icon = runCatching { si.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull()
-                    ?: runCatching { appInfo.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull(),
+                label = label,
+                icon = runCatching { appInfo.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull()
+                    ?: runCatching { si.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull(),
                 categories = categories,
                 minApiLevel = minApi,
             )

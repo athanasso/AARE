@@ -1493,6 +1493,12 @@ private fun AppsCard(settings: Settings) {
     var phoneScreen by remember { mutableStateOf(settings.phoneScreen) }
     var browser by remember { mutableStateOf(settings.browser) }
     var browserUrl by remember { mutableStateOf(settings.browserUrl) }
+    var standaloneEnabled by remember { mutableStateOf(settings.standaloneApps) }
+    var standaloneAllowed by remember { mutableStateOf(settings.standaloneAppPackages) }
+    val pm = ctx.packageManager
+    val mapsPkg = "com.google.android.apps.maps"
+    val hasGoogleMaps = remember { runCatching { pm.getApplicationInfo(mapsPkg, 0) }.isSuccess }
+
     // Same rules as the car's launcher (CarRuntime.applyApps): an app with a car app shows once, as that.
     val lists by produceState<LauncherLists?>(null) {
         value = withContext(Dispatchers.IO) {
@@ -1516,13 +1522,34 @@ private fun AppsCard(settings: Settings) {
                 return@Section
             }
             AppGroup(stringResource(R.string.setup_app_group_nav))
-            if (l.carApps.isEmpty()) Text(stringResource(R.string.setup_app_list_no_nav), style = MaterialTheme.typography.bodyMedium)
+            if (l.carApps.isEmpty() && !hasGoogleMaps) Text(stringResource(R.string.setup_app_list_no_nav), style = MaterialTheme.typography.bodyMedium)
             val navigationKind = stringResource(R.string.setup_app_kind_navigation)
             val genericKind = stringResource(R.string.setup_app_kind_generic)
             l.carApps.forEach { app ->
                 val kind = if (app.isNavigation) navigationKind
                     else app.categories.firstOrNull()?.substringAfterLast('.')?.lowercase()?.replaceFirstChar { it.uppercase() } ?: genericKind
                 AppRow(app.icon, app.label, kind, app.packageName !in hidden) { toggle(app.packageName, it) }
+            }
+            if (hasGoogleMaps && l.carApps.none { it.packageName == mapsPkg }) {
+                val mapsInfo = runCatching { pm.getApplicationInfo(mapsPkg, 0) }.getOrNull()
+                val mapsLabel = mapsInfo?.let { pm.getApplicationLabel(it).toString() } ?: "Google Maps"
+                val mapsIcon = mapsInfo?.let { runCatching { pm.getApplicationIcon(it).toBitmap(96, 96) }.getOrNull() }
+                val isMapsEnabled = mapsPkg in standaloneAllowed && standaloneEnabled && mapsPkg !in hidden
+                AppRow(mapsIcon, mapsLabel, "$navigationKind (Phone app)", isMapsEnabled) { on ->
+                    if (on) {
+                        standaloneEnabled = true
+                        settings.standaloneApps = true
+                        val newAllowed = standaloneAllowed + mapsPkg
+                        standaloneAllowed = newAllowed
+                        settings.standaloneAppPackages = newAllowed
+                        hidden = hidden - mapsPkg
+                        settings.hiddenApps = hidden
+                    } else {
+                        val newAllowed = standaloneAllowed - mapsPkg
+                        standaloneAllowed = newAllowed
+                        settings.standaloneAppPackages = newAllowed
+                    }
+                }
             }
             if (l.media.isNotEmpty()) {
                 AppGroup(stringResource(R.string.setup_app_group_media))
@@ -1547,8 +1574,8 @@ private fun AppsCard(settings: Settings) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
             }
         }
-        if (l != null) AppOrder(settings, l, hidden, phoneScreen, browser)
-        StandaloneAppsSection(settings, ctx)
+        if (l != null) AppOrder(settings, l, hidden, phoneScreen, browser, standaloneAllowed, standaloneEnabled)
+        StandaloneAppsSection(settings, ctx, standaloneEnabled, { standaloneEnabled = it; settings.standaloneApps = it }, standaloneAllowed, { standaloneAllowed = it; settings.standaloneAppPackages = it })
         val unsupported by produceState(emptyList<UnsupportedCarApp>(), l) {
             if (l != null) value = withContext(Dispatchers.IO) { AndroidAutoApps.unsupported(ctx, l.carApps.map { it.packageName }) }
         }
@@ -1564,12 +1591,31 @@ private fun AppsCard(settings: Settings) {
 
 /** The order of the car's app list: the visible apps, with up and down buttons. */
 @Composable
-private fun AppOrder(settings: Settings, l: LauncherLists, hidden: Set<String>, phoneScreen: Boolean, browser: Boolean) {
+private fun AppOrder(
+    settings: Settings,
+    l: LauncherLists,
+    hidden: Set<String>,
+    phoneScreen: Boolean,
+    browser: Boolean,
+    standaloneAllowed: Set<String> = settings.standaloneAppPackages,
+    standaloneEnabled: Boolean = settings.standaloneApps,
+) {
+    val ctx = LocalContext.current
     // Keys as CarRuntime.orderKey: packages, or the built-in apps' ids.
     val all = buildList {
         l.carApps.forEach { add(Triple(it.packageName, it.label, it.icon)) }
         l.media.forEach { add(Triple(it.packageName, it.label, it.icon)) }
         l.messaging.forEach { add(Triple(it.packageName, it.label, it.icon)) }
+        if (standaloneEnabled) {
+            val pm = ctx.packageManager
+            for (pkg in standaloneAllowed) {
+                if (any { it.first == pkg }) continue
+                val info = runCatching { pm.getApplicationInfo(pkg, 0) }.getOrNull() ?: continue
+                val label = pm.getApplicationLabel(info).toString()
+                val icon = runCatching { pm.getApplicationIcon(info).toBitmap(96, 96) }.getOrNull()
+                add(Triple(pkg, label, icon))
+            }
+        }
     }.filter { it.first !in hidden } + listOfNotNull(
         Triple(CarRuntime.PHONE_ID, stringResource(R.string.setup_app_entry_phone), null),
         Triple(CarRuntime.SETTINGS_ID, stringResource(R.string.setup_app_entry_settings), null),
@@ -1612,15 +1658,20 @@ private fun AppGroup(title: String) {
 
 /** Opt-in: launch ordinary phone apps on the car screen (parked only; needs root or Shizuku). */
 @Composable
-private fun StandaloneAppsSection(settings: Settings, ctx: android.content.Context) {
-    var enabled by remember { mutableStateOf(settings.standaloneApps) }
-    var allowed by remember { mutableStateOf(settings.standaloneAppPackages) }
+private fun StandaloneAppsSection(
+    settings: Settings,
+    ctx: android.content.Context,
+    enabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    allowed: Set<String>,
+    onAllowedChange: (Set<String>) -> Unit,
+) {
     val available = remember { AppLauncher.available(ctx) }
     Section(stringResource(R.string.standalone_section_title)) {
         Text(stringResource(R.string.standalone_section_warning), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         Spacer(Modifier.height(8.dp))
         Toggle(stringResource(R.string.standalone_toggle_title), stringResource(R.string.standalone_toggle_subtitle), enabled) {
-            enabled = it; settings.standaloneApps = it
+            onEnabledChange(it)
         }
         if (enabled && !available) {
             Text(stringResource(R.string.standalone_need_root), style = MaterialTheme.typography.bodySmall,
@@ -1639,8 +1690,8 @@ private fun StandaloneAppsSection(settings: Settings, ctx: android.content.Conte
                 Spacer(Modifier.height(8.dp))
                 list.forEach { (pkg, label, icon) ->
                     AppRow(icon, label, pkg, pkg in allowed) { on ->
-                        allowed = if (on) allowed + pkg else allowed - pkg
-                        settings.standaloneAppPackages = allowed
+                        val next = if (on) allowed + pkg else allowed - pkg
+                        onAllowedChange(next)
                     }
                 }
             }
