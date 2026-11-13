@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -38,6 +39,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -516,6 +518,25 @@ private fun HybridDashboard(state: CarUiState, actions: CarActions, navMap: @Com
             Column(Modifier.weight(1f)) {
                 Text(greeting(), style = MaterialTheme.typography.headlineSmall, color = palette.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(today("EEEEdMMMM"), style = MaterialTheme.typography.labelLarge, color = palette.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            val carData by net.prototux.aare.car.CarData.state.collectAsState()
+            val speed = carData.speed?.value?.metersPerSecond?.let { (it * 3.6f).toInt() }
+            val rpm = carData.rpm?.value?.toInt()
+            val coolant = carData.coolantTempC?.value?.toInt()
+            if (speed != null || rpm != null) {
+                val pill = RoundedCornerShape(28.dp)
+                Box(Modifier.height(56.dp).clip(pill).background(palette.card).border(1.dp, palette.line, pill).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Rounded.Speed, "OBD", tint = palette.accent, modifier = Modifier.size(22.dp))
+                        val text = buildList {
+                            if (speed != null) add("$speed km/h")
+                            if (rpm != null) add("$rpm RPM")
+                            if (coolant != null) add("$coolant°C")
+                        }.joinToString(" · ")
+                        Text(text, style = MaterialTheme.typography.labelLarge, color = palette.text)
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
             }
             if (state.weather != null) {
                 val pill = RoundedCornerShape(28.dp)

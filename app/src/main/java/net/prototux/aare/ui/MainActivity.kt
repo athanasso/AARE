@@ -64,6 +64,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
@@ -78,6 +79,7 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Tune
@@ -1292,6 +1294,20 @@ private fun CarScreenSettings(settings: Settings, refresh: Int, onStyleChange: (
                 layout = it; settings.carLayout = it
             }
             Toggle(stringResource(R.string.setup_toggle_dark_bar_title), stringResource(R.string.setup_toggle_dark_bar_subtitle), darkBar) { darkBar = it; settings.darkBar = it }
+            var carDpi by remember { mutableIntStateOf(settings.carDpi) }
+            val dpiLabel = if (carDpi == 0) "Auto" else "${carDpi} DPI"
+            Spacer(Modifier.height(8.dp))
+            Choices("Screen Density ($dpiLabel)", listOf(
+                "0" to "Auto",
+                "130" to "Compact",
+                "160" to "160 DPI",
+                "200" to "200 DPI",
+                "240" to "Large",
+            ), carDpi.toString()) {
+                val d = it.toIntOrNull() ?: 0
+                carDpi = d
+                settings.carDpi = d
+            }
         }
         Section(stringResource(R.string.setup_section_dashboard)) {
             Choices(stringResource(R.string.setup_choice_wallpaper), listOf("none" to stringResource(R.string.setup_wallpaper_none)) + WALLPAPER_NAMES.map { it to it.replaceFirstChar(Char::uppercase) } +
@@ -1562,6 +1578,10 @@ private fun AppsCard(settings: Settings) {
                 l.messaging.forEach { app -> AppRow(app.icon, app.label, messagingKind, app.packageName !in hidden) { toggle(app.packageName, it) } }
             }
             AppGroup(stringResource(R.string.setup_app_group_aare))
+            val builtinKind = stringResource(R.string.setup_app_kind_generic)
+            AppRow(null, stringResource(R.string.setup_app_entry_phone), builtinKind, CarRuntime.PHONE_ID !in hidden) { toggle(CarRuntime.PHONE_ID, it) }
+            AppRow(null, stringResource(R.string.setup_app_entry_settings), builtinKind, CarRuntime.SETTINGS_ID !in hidden) { toggle(CarRuntime.SETTINGS_ID, it) }
+            AppRow(null, stringResource(R.string.setup_app_entry_notifications), builtinKind, CarRuntime.NOTIFICATIONS_ID !in hidden) { toggle(CarRuntime.NOTIFICATIONS_ID, it) }
             AppRow(null, stringResource(R.string.phone_section_title), stringResource(R.string.phone_app_row_subtitle), phoneScreen) { phoneScreen = it; settings.phoneScreen = it }
             AppRow(null, stringResource(R.string.browser_app_label), stringResource(R.string.browser_app_row_subtitle), browser) { browser = it; settings.browser = it }
             if (browser) {
@@ -1644,6 +1664,7 @@ private fun AppOrder(
                 else Box(Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer))
                 Spacer(Modifier.width(12.dp))
                 Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                IconButton(onClick = { move(i, -i) }, enabled = i > 0) { Icon(Icons.Rounded.ArrowUpward, "Top") }
                 IconButton(onClick = { move(i, -1) }, enabled = i > 0) { Icon(Icons.Rounded.KeyboardArrowUp, stringResource(R.string.common_up)) }
                 IconButton(onClick = { move(i, 1) }, enabled = i < sorted.lastIndex) { Icon(Icons.Rounded.KeyboardArrowDown, stringResource(R.string.common_down)) }
             }
@@ -1680,6 +1701,19 @@ private fun StandaloneAppsSection(
         if (enabled) {
             Text(stringResource(R.string.standalone_nav_hint), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
+            var searchQuery by remember { mutableStateOf("") }
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Search phone apps") },
+                placeholder = { Text("Filter by app or package") },
+                leadingIcon = { Icon(Icons.Rounded.Search, null) },
+                trailingIcon = if (searchQuery.isNotEmpty()) {
+                    { IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Rounded.Close, null) } }
+                } else null,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
             val apps by produceState<List<Triple<String, String, android.graphics.Bitmap?>>?>(null) {
                 value = withContext(Dispatchers.IO) { launchableApps(ctx) }
             }
@@ -1687,8 +1721,11 @@ private fun StandaloneAppsSection(
             if (list == null) {
                 Text(stringResource(R.string.setup_app_list_loading), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 12.dp))
             } else {
+                val filtered = if (searchQuery.isBlank()) list else list.filter {
+                    it.second.contains(searchQuery, ignoreCase = true) || it.first.contains(searchQuery, ignoreCase = true)
+                }
                 Spacer(Modifier.height(8.dp))
-                list.forEach { (pkg, label, icon) ->
+                filtered.forEach { (pkg, label, icon) ->
                     AppRow(icon, label, pkg, pkg in allowed) { on ->
                         val next = if (on) allowed + pkg else allowed - pkg
                         onAllowedChange(next)

@@ -288,6 +288,7 @@ class CarRuntime(
         if (ui.night != night) {
             ui.night = night
             configurationChanged()
+            syncSystemNightMode(night)
         }
         val position = settings.railPosition
         // Passenger mode lifts the driving restrictions (keyboard, list lengths, phone screen).
@@ -317,6 +318,21 @@ class CarRuntime(
         ui.railAutoHide = settings.railAutoHide
         ui.homeMapMusicDefault = settings.homeMapMusicDefault
         ui.musicWidgetSize = settings.musicWidgetSize
+    }
+
+    private fun syncSystemNightMode(night: Boolean) {
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val uiMode = context.getSystemService(Context.UI_MODE_SERVICE) as? android.app.UiModeManager
+                uiMode?.nightMode = if (night) android.app.UiModeManager.MODE_NIGHT_YES else android.app.UiModeManager.MODE_NIGHT_NO
+            }
+            if (net.prototux.aare.launch.AppLauncher.available(context)) {
+                runCatching {
+                    val cmd = if (night) "cmd uimode night yes" else "cmd uimode night no"
+                    Runtime.getRuntime().exec(arrayOf("su", "-c", cmd))
+                }
+            }
+        }
     }
 
     private val settingsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -422,10 +438,16 @@ class CarRuntime(
             if (m.packageName in hidden || entries.any { it.packageName == m.packageName }) continue
             entries += CarAppEntry(mediaId(m.packageName), m.packageName, m.label, m.icon, CarAppKind.MEDIA)
         }
-        // Built in, like Android Auto's: calls and the car-side settings.
-        entries += CarAppEntry(PHONE_ID, context.packageName, context.getString(R.string.setup_app_entry_phone), builtinIcon(R.drawable.ic_car_phone), CarAppKind.PHONE)
-        entries += CarAppEntry(SETTINGS_ID, context.packageName, context.getString(R.string.setup_app_entry_settings), builtinIcon(R.drawable.ic_car_settings), CarAppKind.SETTINGS)
-        entries += CarAppEntry(NOTIFICATIONS_ID, context.packageName, context.getString(R.string.setup_app_entry_notifications), builtinIcon(R.drawable.ic_car_notifications), CarAppKind.NOTIFICATIONS)
+        // Built in, like Android Auto's: calls and the car-side settings (can be hidden if user prefers).
+        if (PHONE_ID !in hidden) {
+            entries += CarAppEntry(PHONE_ID, context.packageName, context.getString(R.string.setup_app_entry_phone), builtinIcon(R.drawable.ic_car_phone), CarAppKind.PHONE)
+        }
+        if (SETTINGS_ID !in hidden) {
+            entries += CarAppEntry(SETTINGS_ID, context.packageName, context.getString(R.string.setup_app_entry_settings), builtinIcon(R.drawable.ic_car_settings), CarAppKind.SETTINGS)
+        }
+        if (NOTIFICATIONS_ID !in hidden) {
+            entries += CarAppEntry(NOTIFICATIONS_ID, context.packageName, context.getString(R.string.setup_app_entry_notifications), builtinIcon(R.drawable.ic_car_notifications), CarAppKind.NOTIFICATIONS)
+        }
         if (settings.phoneScreen && phoneScreenAllowed) {
             entries += CarAppEntry(PHONE_SCREEN_ID, context.packageName, context.getString(R.string.phone_section_title), builtinIcon(R.drawable.ic_phone_screen), CarAppKind.PHONE_SCREEN)
         }

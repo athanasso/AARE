@@ -21,6 +21,11 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("verbose_protocol_log", false)
         set(v) = prefs.edit { putBoolean("verbose_protocol_log", v) }
 
+    /** Custom screen density / DPI override for head units (0 = auto/native; e.g. 140, 160, 200, 240). */
+    var carDpi: Int
+        get() = prefs.getInt("car_dpi", 0)
+        set(v) = prefs.edit { putInt("car_dpi", v) }
+
     /** Also accept head units from the network (TCP 5277, no authentication). Switched off again after one session if [headUnitServerLanOnce]. */
     var headUnitServerLan: Boolean
         get() = prefs.getBoolean("hu_server_lan", false)

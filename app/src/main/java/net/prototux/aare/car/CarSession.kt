@@ -422,7 +422,7 @@ class CarSession(
         videoConfig = config
         val (w, h) = resolution(config.codecResolution)
         val fps = if (config.frameRate == VideoFrameRateType.VIDEO_FPS_60) 60 else 30
-        val dpi = vehicleOverride?.dpi ?: if (config.density > 0) config.density else defaultDensity(minOf(w, h))
+        val dpi = settings.carDpi.takeIf { it > 0 } ?: (vehicleOverride?.dpi ?: if (config.density > 0) config.density else defaultDensity(minOf(w, h)))
         val layout = ProjectionLayout.of(config, w, h).let { base ->
             val o = vehicleOverride
             if (o?.widthMargin == null && o?.heightMargin == null) base
