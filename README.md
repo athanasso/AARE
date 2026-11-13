@@ -1,5 +1,6 @@
 # AARE Cockpit
 
+[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="50">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/athanasso/AARE)
 [![Release](https://img.shields.io/github/v/release/athanasso/AARE?label=Release&style=flat-square&color=2563eb)](https://github.com/athanasso/AARE/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL_3.0-blue.svg?style=flat-square)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84.svg?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
