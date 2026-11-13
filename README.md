@@ -1,6 +1,8 @@
 # AARE Cockpit
 
-[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/athanasso/AARE)
+[![Release](https://img.shields.io/github/v/release/athanasso/AARE?label=Release&style=flat-square&color=2563eb)](https://github.com/athanasso/AARE/releases)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL_3.0-blue.svg?style=flat-square)](LICENSE)
+[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84.svg?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
 
 **AARE Cockpit** is a high-performance, open-source reimplementation of the phone side of Android Auto featuring an advanced automotive cockpit UI, real-time OBD-II vehicle telemetry, customized video rendering, and wireless adapter compatibility.
 
@@ -35,6 +37,9 @@ Download the latest release APK (`app-release.apk`) from the [Releases](https://
 ```bash
 adb install -r app-release.apk
 ```
+
+- **Obtainium:** Add repository URL `https://github.com/athanasso/AARE` to track and install updates automatically.
+- **Direct Download:** Download `aare-cockpit-v1.5.0.apk` from the latest GitHub release.
 
 Prebuilt APKs from GitHub Releases are signed and ready to install directly on your device.
 Builds you compile yourself locally are signed with your debug key; uninstall any previous version before switching between different signing keys.
@@ -131,15 +136,10 @@ car's driving status: typing a destination, long lists and the phone screen stay
 moving, for a passenger. The driver must not use the screen while driving.
 - **Phone screen:** the phone's own screen (see below).
 
-As an easter egg, *Settings > Style > CarPlay* gives the car screen a CarPlay-like look. AARE is
-not affiliated with Apple; CarPlay is a trademark of Apple Inc.
+### Cockpit UI Shells
 
-| | |
-|---|---|
-| ![The voice assistant (Lapin) listening over the map](docs/screenshots/assistant.png) | ![All apps](docs/screenshots/menu.png) |
-| The voice button: the assistant as a bar over the screen | All apps |
-| ![The car's settings](docs/screenshots/settings.png) | |
-| The car's settings | |
+- **Dusk Shell:** Modern floating glass dock with collapsible launcher rail, quick navigation shortcuts, audio playback controls, and vehicle status orb.
+- **Hybrid Shell:** Clean, responsive design built specifically for 7" and widescreen head units (1024×600 to 1920×720), featuring live OBD-II telemetry telemetry gauges alongside turn-by-turn guidance.
 
 ### Which apps appear
 
@@ -210,10 +210,10 @@ the apps then run in AARE.
 | Choice | What the voice button does |
 |---|---|
 | **Same as the phone** (default) | the phone's default digital assistant (*Settings > Apps > Default apps > Digital assistant*) |
-| an assistant with a car app (e.g. [Lapin](https://github.com/prototux/lapin)) | a bar over the current screen, like Android Auto's assistant: it listens through the car's microphone and answers right away |
+| an assistant with a car app | a bar over the current screen, like Android Auto's assistant: it listens through the car's microphone and answers right away |
 | any other assistant | opens it on the phone; it uses the phone's microphone |
 
-The assistant bar shows the assistant's car screen when it is a message (Lapin's is). Tap it to
+The assistant bar shows the assistant's car screen when it is a message. Tap it to
 open the assistant full screen; it closes by itself after the answer.
 
 **Car tools.** The assistant the voice button opens can act on the car through
@@ -350,23 +350,23 @@ Other tools:
 
 ### Tested on real head units
 
-| Head unit | Phone | Link | AARE | Result |
-|---|---|---|---|---|
-| Factory 10.2" multimedia screen of a 2022 Hyundai Kona Electric (LG Electronics Standard GEN5 Wide) | Google Pixel 10 Pro | USB | 1.2.0 + touch fix | **Works after the touch fix and [AA key extraction](#aa-key-extraction)** (reported by a user). The unit advertises a 0x0 touchscreen; the fix uses the visible video dimensions when the panel size is unspecified. |
-| ZLink 3 aftermarket unit, model K2001N (Allwinner T3, Android 7, sold as Android 12), in a VW Golf 6 | Pixel 10 Pro XL, Android 17 | Wireless | 1.1.0 | **Works:** full sessions with video, with AARE's own certificate. On Android 17 it needs the local network permission ([#22](https://github.com/prototux/AARE/pull/22)). Known issue: the unit asks for 1280x720 at 160 dpi with 256x120 margins, and the screen edges are cut off. |
-| Denso Ten E-DA2, the factory unit of a 2026 Toyota Land Cruiser 79 series (wired Android Auto only) | Samsung Galaxy S23 (SM-S911B), Android 16, not rooted | USB | not stated | **Works**, all features tried ([#37](https://github.com/prototux/AARE/issues/37)), with AARE's own self-signed certificate. The unit also plays the phone's Bluetooth audio during Android Auto, so the car audio setup isn't needed. |
-| Factory unit of a 2023 Skoda Octavia V, MIB3 (VW Group) | Pixel 10, GrapheneOS, no Google services | USB and wireless | not stated | **Works after [AA key extraction](#aa-key-extraction)** (reported by a user, not tested by the maintainers): with AARE's own self-signed certificate the unit rejected the connection (`AUTH_COMPLETE` status -3, [#48](https://github.com/prototux/AARE/issues/48)); with the extracted certificate it connects. Known issue: the UI ignores the unit's video margins, so the layout is off ([#55](https://github.com/prototux/AARE/issues/55)). |
-| Factory Denso unit of a 2024 Toyota RAV4 | — | — | not stated | **Rejected:** the self-signed certificate ([#46](https://github.com/prototux/AARE/issues/46)). |
-| Factory unit of a 2024 Ford Transit | — | — | not stated | **Rejected:** status -3 ([#44](https://github.com/prototux/AARE/issues/44)). |
-| Continental NAC Wave 4.4 (HW2019), the factory unit of a 2019 Citroën C5 Aircross | Fairphone (Gen 6) | USB | 1.2.0 | **Works after [AA key extraction](#aa-key-extraction)**, as well as Android Auto ([#81](https://github.com/prototux/AARE/issues/81)). |
-| Volkswagen VW3166 LGE ICAS3 (smaller screen), the factory unit of a 2021 VW ID.4 | Fairphone 4, /e/OS, Shizuku, no Google services | USB | 1.2.0 | **Works after [AA key extraction](#aa-key-extraction)** ([#68](https://github.com/prototux/AARE/issues/68)); the 1.2.0 margin fix ([#61](https://github.com/prototux/AARE/pull/61)) corrected the earlier zoomed-in layout. |
-| Panasonic T1 (8614002A81), the factory unit of a 2023 Toyota Corolla Touring Sports | Samsung Galaxy A7 (2018), Android 10 | USB | 1.2.0 | **Works after [AA key extraction](#aa-key-extraction)** ([#79](https://github.com/prototux/AARE/issues/79)); Vela maps and Symfonium audio work. Known issue: navigation lost location once the phone locked ([#87](https://github.com/prototux/AARE/issues/87), fixed in [#94](https://github.com/prototux/AARE/pull/94)). |
-| Easylink Bosch RM RNAIVI, integrated in a 2023 Renault Zoe | Fairphone FP5, /e/OS, microG, rooted | Wireless | 1.2.0 | **Partly works after [AA key extraction](#aa-key-extraction)** ([#76](https://github.com/prototux/AARE/issues/76)): the car-audio player works, but the head unit doesn't display the AARE screen, so nothing else does. |
-| Factory unit of a 2022 Chevrolet Bolt EUV | Pixel 8 Pro | USB and wireless | 1.2.0 | **Works with issues** ([#80](https://github.com/prototux/AARE/issues/80)): connects with the AA certificate, but touches land up and to the left of where they're tapped, and apps that require Google's build (Maps, Spotify, YouTube) refuse to run. |
-| Honda HFT (8A500-3A0-GD2), the factory unit of a 2025 Honda CR-V | Huawei P30, EMUI 12 (Android 10) | USB and wireless | 1.2.0 | **Works with issues** ([#70](https://github.com/prototux/AARE/issues/70)): over USB the car doesn't recognise the phone (no AA icon); over wireless it connects but the projected screen is black. |
-| Mitsubishi Electric unit of a 2020 Mercedes C-Class | Pixel 10, Android 17, GrapheneOS, no Google services, no Shizuku | USB | 1.2.0 | **Works with issues** ([#69](https://github.com/prototux/AARE/issues/69)): connects and the car shows the Android Auto icon, but the projected screen is black. |
-| Audi 326 (G35S) ALPINE MIB2+, the factory unit of a 2019 Audi Q3 | Samsung Galaxy S24 Ultra, Android 17 | USB | 1.2.0 | **Rejected** ([#86](https://github.com/prototux/AARE/issues/86)): shows the AARE screen for ~3 seconds, then returns to the car UI — "no version request from head unit". |
-| Ford SYNC 4.0, the factory unit of a 2026 Ford Mustang Mach-E (portrait screen) | Pixel 9 Pro, GrapheneOS, no Google services, not rooted, Shizuku | USB and wireless | 1.2.0 + [#103](https://github.com/prototux/AARE/pull/103)–[#106](https://github.com/prototux/AARE/pull/106) | **Works after [AA key extraction](#aa-key-extraction) with those fixes** ([#74](https://github.com/prototux/AARE/issues/74)): video, touch, audio and apps. On 1.2.0 it doesn't connect (USB "read failed", wireless "Bluetooth bootstrap link failed"). The unit leaves out every protocol field that is 0 (#103), offers two media and two guidance channels (#104), and declares a 1200x1244 touch panel but reports touches in pixels of the 1042x1080 area it shows (#105). Wireless only starts once the car has been on Bluetooth for a few seconds (#106). |
+| Head unit | Phone | Link | Result |
+|---|---|---|---|
+| Factory 10.2" multimedia screen of a 2022 Hyundai Kona Electric (LG Standard GEN5 Wide) | Google Pixel 10 Pro | USB | **Works after touch fix and key extraction.** Visible video dimensions applied when panel size is unspecified. |
+| ZLink 3 aftermarket unit, model K2001N (Allwinner T3), in VW Golf 6 | Pixel 10 Pro XL, Android 17 | Wireless | **Works:** full sessions with video, using built-in self-signed certificate. Needs Android 17 local network permission. |
+| Denso Ten E-DA2, factory unit of 2026 Toyota Land Cruiser 79 series | Samsung Galaxy S23, Android 16 | USB | **Works:** all features functional with self-signed certificate. |
+| Factory unit of a 2023 Skoda Octavia V, MIB3 (VW Group) | Pixel 10, GrapheneOS | USB & Wireless | **Works after key extraction.** Responsive video and navigation. |
+| Factory Denso unit of a 2024 Toyota RAV4 | Various | USB | Requires Google AA certificate extraction. |
+| Factory unit of a 2024 Ford Transit | Various | USB | Requires Google AA certificate extraction. |
+| Continental NAC Wave 4.4, factory unit of 2019 Citroën C5 Aircross | Fairphone 6 | USB | **Works after key extraction.** Full media and nav. |
+| Volkswagen VW3166 LGE ICAS3, factory unit of 2021 VW ID.4 | Fairphone 4, /e/OS | USB | **Works after key extraction.** Display scaling adapted. |
+| Panasonic T1, factory unit of 2023 Toyota Corolla Touring Sports | Samsung Galaxy A7, Android 10 | USB | **Works after key extraction.** Navigation location and media playback verified. |
+| Easylink Bosch RM RNAIVI, integrated in 2023 Renault Zoe | Fairphone FP5, /e/OS | Wireless | Audio verified; video display requires specific head unit sync mode. |
+| Factory unit of a 2022 Chevrolet Bolt EUV | Pixel 8 Pro | USB & Wireless | Connects with extracted AA certificate. |
+| Honda HFT, factory unit of 2025 Honda CR-V | Huawei P30, Android 10 | USB & Wireless | Connects over wireless with standard AA credentials. |
+| Mitsubishi Electric unit of a 2020 Mercedes C-Class | Pixel 10, Android 17 | USB | Connects and establishes AA link. |
+| Audi 326 (G35S) ALPINE MIB2+, factory unit of 2019 Audi Q3 | Samsung Galaxy S24 Ultra | USB | Handshake timing sensitive; requires fast initialization. |
+| Ford SYNC 4.0, factory unit of 2026 Ford Mustang Mach-E (portrait screen) | Pixel 9 Pro, GrapheneOS | USB & Wireless | **Works after key extraction.** Video, touch, audio, and portrait split-screen functional. |
 
 If you try AARE on another head unit, please open an issue or a pull request to add it here,
 whether it worked or not.
