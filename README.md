@@ -1,9 +1,24 @@
+<div align="center">
+
 # AARE Cockpit
 
-[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="50">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/athanasso/AARE)
-[![Release](https://img.shields.io/github/v/release/athanasso/AARE?label=Release&style=flat-square&color=2563eb)](https://github.com/athanasso/AARE/releases)
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL_3.0-blue.svg?style=flat-square)](LICENSE)
-[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84.svg?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
+**High-performance Android Auto projection host with real-time OBD-II vehicle telemetry**
+
+[![Release](https://img.shields.io/github/v/release/athanasso/AARE?label=Release&style=for-the-badge&color=2563eb)](https://github.com/athanasso/AARE/releases)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL_3.0-blue.svg?style=for-the-badge)](LICENSE)
+[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84.svg?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
+
+<p align="center">
+  <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/athanasso/AARE">
+    <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="48">
+  </a>
+</p>
+
+<img src="docs/screenshots/hybrid_cockpit.png" alt="AARE Cockpit - Hybrid Shell with Live OBD-II Telemetry" width="100%">
+
+</div>
+
+---
 
 **AARE Cockpit** is a high-performance, open-source reimplementation of the phone side of Android Auto featuring an advanced automotive cockpit UI, real-time OBD-II vehicle telemetry, customized video rendering, and wireless adapter compatibility.
 
@@ -13,14 +28,12 @@ The phone talks the Android Auto projection protocol (AAP) to the car's head uni
 - **Media:** Spotify, Subsonic/Navidrome (Tempus), VRadio, and any app with a media3 or `MediaBrowserService` library.
 - **Cockpit Telemetry:** Live vehicle metrics (RPM, Speed, Coolant Temperature, Battery Voltage) via Bluetooth ELM327 OBD-II integration.
 - **Dynamic Audio Visualizer:** Real-time animated audio visualizer integrated into the car dashboard.
-- **Smart Day/Night Switching:** Automatic theme adaptation powered by the phone's ambient light sensor and solar twilight calculations for head units lacking illumination (ILL) wire triggers.
-- **Video Bitrate Tuning:** High-bandwidth hardware H.264/H.265 encoding with selectable bitrates up to 20 Mbps, eliminating compression artifacts on 7" 1024×600 and high-DPI screens.
+- **Smart Day/Night Switching:** Automatic theme adaptation powered by the phone's ambient light sensor and solar twilight calculations.
+- **Video Bitrate Tuning:** High-bandwidth hardware H.264/H.265 encoding with selectable bitrates up to 20 Mbps, eliminating compression artifacts.
 - **Hardware Key Remapping:** Intercept and assign custom car actions (toggle shell, home, maps, mute) to steering wheel and rotary knob keys.
 - **Universal Wireless Adapter Compatibility:** Automatic dual-handshake fallback with version echo, supporting Carlinkit, Ottocast, and third-party wireless adapters.
 
 No Google Play Services required.
-
-![AARE Cockpit - Hybrid Shell with Live OBD-II Telemetry](docs/screenshots/hybrid_cockpit.png)
 
 ## Key Enhancements in Cockpit Edition
 
@@ -141,12 +154,18 @@ moving, for a passenger. The driver must not use the screen while driving.
 
 ### Cockpit UI Shells
 
-- **Dusk Shell:** Modern floating glass dock with collapsible launcher rail, quick navigation shortcuts, audio playback controls, and vehicle status orb.
-- **Hybrid Shell:** Clean, responsive design built specifically for 7" and widescreen head units (1024×600 to 1920×720), featuring live OBD-II telemetry gauges alongside turn-by-turn guidance.
+- **Hybrid Shell:** Responsive design built specifically for 7" and widescreen head units (1024×600 to 1920×720), featuring live OBD-II telemetry gauges alongside turn-by-turn guidance.
+- **Dusk Shell:** Modern floating frosted glass dock with collapsible launcher rail, quick navigation shortcuts, audio playback controls, and glowing status orb.
 
-| Dusk Shell (Glassmorphism & Orb) | Companion App (Material 3 Multi-Tab) |
-|---|---|
-| ![AARE Cockpit - Dusk Shell](docs/screenshots/dusk_shell.png) | ![AARE Cockpit - Companion App](docs/screenshots/companion_app.png) |
+![AARE Cockpit - Dusk Shell](docs/screenshots/dusk_shell.png)
+
+### Phone Companion App
+
+The companion app running on the phone provides 4-tab Material 3 management (*Home*, *Customize*, *My Cars*, *Settings*) for active car profiles, ambient light tuning, OBD-II toggles, and steering wheel control remapping.
+
+<p align="center">
+  <img src="docs/screenshots/companion_app.png" alt="AARE Cockpit - Phone Companion App" width="340">
+</p>
 
 ### Which apps appear
 
