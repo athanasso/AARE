@@ -811,10 +811,15 @@ private fun Header(onSettingsClick: () -> Unit = {}) {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
     val greeting = when { hour < 12 -> stringResource(R.string.greeting_morning); hour < 18 -> stringResource(R.string.greeting_afternoon); else -> stringResource(R.string.greeting_evening) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Image(
-            androidx.compose.ui.res.painterResource(R.mipmap.ic_launcher), null,
-            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)),
-        )
+        Box(
+            Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(Brand.gradient),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                androidx.compose.ui.res.painterResource(R.drawable.ic_launcher_foreground), null,
+                modifier = Modifier.size(48.dp),
+            )
+        }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(greeting, style = MaterialTheme.typography.headlineSmall)
