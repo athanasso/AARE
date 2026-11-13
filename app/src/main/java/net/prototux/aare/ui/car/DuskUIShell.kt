@@ -188,7 +188,7 @@ private fun DuskRail(state: CarUiState, actions: CarActions, palette: HybridPale
 
 /** The thin re-show tab (`.handle` in the mockup) that appears at the screen's edge once the rail is collapsed. */
 @Composable
-private fun DuskRailHandle(palette: HybridPalette, onRight: Boolean, modifier: Modifier, onClick: () -> Unit) {
+internal fun DuskRailHandle(palette: HybridPalette, onRight: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val shape = if (onRight) RoundedCornerShape(topStart = 18.dp, bottomStart = 18.dp) else RoundedCornerShape(topEnd = 18.dp, bottomEnd = 18.dp)
     val icon = if (onRight) Icons.AutoMirrored.Rounded.KeyboardArrowLeft else Icons.AutoMirrored.Rounded.KeyboardArrowRight
     Box(

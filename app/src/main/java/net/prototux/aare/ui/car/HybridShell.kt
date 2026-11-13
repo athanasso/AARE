@@ -23,6 +23,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -269,6 +271,8 @@ internal fun HybridShell(
     val bars: @Composable (@Composable () -> Unit) -> Unit = { content ->
         if (barPalette === palette) content() else MaterialTheme(colorScheme = colorSchemeFor(barPalette), content = content)
     }
+    val onRight = state.railOnRight
+    var railVisible by remember(state.railAutoHide) { mutableStateOf(!state.railAutoHide) }
     MaterialTheme(colorScheme = colorSchemeFor(palette)) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val dimens = net.prototux.aare.ui.theme.carDimensFor(maxWidth, maxHeight)
@@ -276,7 +280,9 @@ internal fun HybridShell(
                 Box(Modifier.fillMaxSize().background(palette.bg)) {
                     Row(Modifier.fillMaxSize().then(modifier)) {
                         // The rail follows the "Side bar" setting here too, not just in the Dusk layout.
-                        if (!state.railOnRight) bars { HybridRail(state, actions, barPalette, edgeAtEnd = true) }
+                        if (!onRight && railVisible) bars {
+                            HybridRail(state, actions, barPalette, edgeAtEnd = true, onCollapse = if (state.railAutoHide) { { railVisible = false } } else null)
+                        }
                         Column(Modifier.weight(1f).fillMaxHeight()) {
                             Box(Modifier.weight(1f).fillMaxWidth()) {
                                 when (val screen = state.screen) {
@@ -291,10 +297,16 @@ internal fun HybridShell(
                                 overlay(Modifier.align(Alignment.BottomCenter))
                                 NoticeOverlay(state, actions, Modifier.align(Alignment.TopCenter))
                                 CallOverlay(state, actions, Modifier.align(Alignment.TopCenter))
+                                if (!railVisible) {
+                                    val handleAlign = if (onRight) Alignment.CenterEnd else Alignment.CenterStart
+                                    DuskRailHandle(barPalette, onRight, Modifier.align(handleAlign)) { railVisible = true }
+                                }
                             }
                             bars { HybridBottomBar(state, actions, barPalette) }
                         }
-                        if (state.railOnRight) bars { HybridRail(state, actions, barPalette, edgeAtEnd = false) }
+                        if (onRight && railVisible) bars {
+                            HybridRail(state, actions, barPalette, edgeAtEnd = false, onCollapse = if (state.railAutoHide) { { railVisible = false } } else null)
+                        }
                     }
                 }
             }
@@ -310,7 +322,13 @@ internal fun HybridShell(
  * from the page, which a same-colored flat panel did not.
  */
 @Composable
-private fun HybridRail(state: CarUiState, actions: CarActions, palette: HybridPalette, edgeAtEnd: Boolean) {
+private fun HybridRail(
+    state: CarUiState,
+    actions: CarActions,
+    palette: HybridPalette,
+    edgeAtEnd: Boolean,
+    onCollapse: (() -> Unit)? = null,
+) {
     val nav = state.navApp()
     val media = state.app(state.activeMediaAppId) ?: state.apps.firstOrNull { it.kind == CarAppKind.MEDIA }
     val phone = state.apps.firstOrNull { it.kind == CarAppKind.PHONE }
@@ -321,9 +339,17 @@ private fun HybridRail(state: CarUiState, actions: CarActions, palette: HybridPa
     Row(Modifier.fillMaxHeight().background(palette.card)) {
         if (!edgeAtEnd) edge()
         Column(
-            Modifier.fillMaxHeight().width(116.dp).padding(vertical = 14.dp),
+            Modifier.fillMaxHeight().width(116.dp).padding(vertical = if (onCollapse != null) 8.dp else 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            if (onCollapse != null) {
+                val chevron = if (state.railOnRight) Icons.AutoMirrored.Rounded.KeyboardArrowRight else Icons.AutoMirrored.Rounded.KeyboardArrowLeft
+                Box(
+                    Modifier.size(width = 72.dp, height = 36.dp).clip(RoundedCornerShape(12.dp)).background(palette.card2).clickable(onClick = onCollapse),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(chevron, stringResource(R.string.dash_hide_rail), tint = palette.muted, modifier = Modifier.size(24.dp)) }
+                Spacer(Modifier.height(6.dp))
+            }
             Clock()
             Text(today("EEEd"), style = RailLabel, color = palette.muted, maxLines = 1)
             Spacer(Modifier.height(8.dp))

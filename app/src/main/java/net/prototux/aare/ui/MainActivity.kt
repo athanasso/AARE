@@ -558,9 +558,7 @@ private fun CustomizeTab(settings: Settings, previewRuntime: CarRuntime, carStyl
                 mapMusic = it; settings.homeMapMusicDefault = it
             }
         }
-        // Auto-hide and the music widget's size exist only in the Dusk layout: Classic gets the
-        // side-bar side alone, rather than controls that do nothing.
-        if (duskLayout) item {
+        item {
             Segmented3(
                 stringResource(R.string.setup_choice_bar),
                 stringResource(R.string.setup_choice_left), !railRight && !railAutoHide,
@@ -572,10 +570,6 @@ private fun CustomizeTab(settings: Settings, previewRuntime: CarRuntime, carStyl
                     1 -> { railRight = true; railAutoHide = false; settings.railAutoHide = false; settings.railPosition = Settings.RAIL_RIGHT }
                     else -> { railAutoHide = true; settings.railAutoHide = true }
                 }
-            }
-        } else item {
-            Segmented2(stringResource(R.string.setup_choice_bar), stringResource(R.string.setup_choice_left), stringResource(R.string.setup_choice_right), railRight) {
-                railRight = it; settings.railPosition = if (it) Settings.RAIL_RIGHT else Settings.RAIL_LEFT
             }
         }
         if (duskLayout) item {
@@ -1434,7 +1428,7 @@ private fun AudioSettings(settings: Settings, state: ProjectionService.State, re
                 if (policy) stringResource(R.string.audio_policy_ready)
                 else stringResource(R.string.audio_policy_not_ready),
                 policy) {
-                ctx.startSafely(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/prototux/AARE#car-audio")))
+                ctx.startSafely(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/athanasso/AARE#car-audio")))
             }
             Check(CaptureMethod.SHIZUKU.label,
                 when {
@@ -1660,7 +1654,7 @@ private fun launchableApps(ctx: android.content.Context): List<Triple<String, St
     val intent = android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER)
     return pm.queryIntentActivities(intent, 0)
         .mapNotNull { it.activityInfo?.packageName }
-        .filter { it != ctx.packageName }
+        .filter { it != ctx.packageName && it !in net.prototux.aare.host.CarAppInfo.IGNORED_PACKAGES }
         .distinct()
         .mapNotNull { pkg ->
             val info = runCatching { pm.getApplicationInfo(pkg, 0) }.getOrNull() ?: return@mapNotNull null

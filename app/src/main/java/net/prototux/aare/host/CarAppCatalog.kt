@@ -47,6 +47,14 @@ data class CarAppInfo(
             "cz.seznam.mapy",               // Mapy.cz
             "com.citymapper.app.release",   // Citymapper
         )
+
+        /** Packages that provide system car framework services and must never be listed as user car apps. */
+        val IGNORED_PACKAGES = setOf(
+            "com.google.android.projection.gearhead", // Android Auto host itself
+            "com.google.android.gms",                 // Google Play Services
+            "com.google.android.googlequicksearchbox",// Google App internal voice plate and dashboard services
+            "com.android.systemui",                   // System UI
+        )
     }
 }
 
@@ -61,20 +69,31 @@ object CarAppCatalog {
             else @Suppress("DEPRECATION") pm.queryIntentServices(intent, flags)
         return found.mapNotNull { ri ->
             val si = ri.serviceInfo ?: return@mapNotNull null
+            val appInfo = si.applicationInfo ?: return@mapNotNull null
+            if (!si.isEnabled || !appInfo.enabled) return@mapNotNull null
+            if (!si.exported) return@mapNotNull null
             if (si.packageName == context.packageName) return@mapNotNull null
+            if (si.packageName in CarAppInfo.IGNORED_PACKAGES) return@mapNotNull null
             val categories = buildSet {
                 ri.filter?.categoriesIterator()?.forEach { add(it) }
             }
-            val appInfo = si.applicationInfo
             val minApi = appInfo.metaData?.getInt(CarAppInfo.MIN_API_KEY, 0)?.takeIf { it > 0 }
                 ?: si.metaData?.getInt(CarAppInfo.MIN_API_KEY, 0) ?: 0
+            val appLabel = appInfo.loadLabel(pm).toString()
+            val serviceLabel = si.loadLabel(pm).toString()
+            val cleanLabel = if (serviceLabel.isBlank() || serviceLabel == si.name || serviceLabel.endsWith("Service") || serviceLabel.endsWith("Module")) {
+                appLabel
+            } else {
+                serviceLabel
+            }
             CarAppInfo(
                 service = ComponentName(si.packageName, si.name),
-                label = (si.loadLabel(pm).takeIf { it.isNotBlank() } ?: appInfo.loadLabel(pm)).toString(),
-                icon = runCatching { si.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull(),
+                label = cleanLabel.ifBlank { appLabel },
+                icon = runCatching { si.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull()
+                    ?: runCatching { appInfo.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull(),
                 categories = categories,
                 minApiLevel = minApi,
             )
-        }.distinctBy { it.service }
+        }.distinctBy { it.packageName }
     }
 }

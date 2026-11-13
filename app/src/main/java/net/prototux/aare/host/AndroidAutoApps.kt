@@ -85,7 +85,7 @@ object AndroidAutoApps {
         val pm = context.packageManager
         @Suppress("DEPRECATION")
         return pm.getInstalledApplications(PackageManager.GET_META_DATA)
-            .filter { it.enabled && it.metaData?.containsKey(META_CAR_APPLICATION) == true && it.packageName != context.packageName }
+            .filter { it.enabled && it.metaData?.containsKey(META_CAR_APPLICATION) == true && it.packageName != context.packageName && it.packageName !in CarAppInfo.IGNORED_PACKAGES }
             .map { it to uses(pm, it) }
     }
 
@@ -93,7 +93,8 @@ object AndroidAutoApps {
     private fun mediaPackages(pm: PackageManager): Set<String> =
         listOf(MediaDiscovery.ACTION_MEDIA3_LIBRARY, MediaDiscovery.ACTION_LEGACY_BROWSER).flatMap { action ->
             @Suppress("DEPRECATION") pm.queryIntentServices(Intent(action), 0)
-                .mapNotNull { ri -> ri.serviceInfo?.takeIf { it.exported }?.packageName }
+                .mapNotNull { ri -> ri.serviceInfo?.takeIf { it.exported && it.isEnabled && it.applicationInfo?.enabled == true }?.packageName }
+                .filter { it !in CarAppInfo.IGNORED_PACKAGES }
         }.toSet()
 
     private fun reason(uses: Set<String>): String = when {

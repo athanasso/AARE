@@ -278,7 +278,7 @@ class CarRuntime(
         val night = when (settings.carTheme) {
             Settings.THEME_DARK -> true
             Settings.THEME_LIGHT -> false
-            else -> when (settings.autoNightSource) {
+            else -> if (!primary) true else when (settings.autoNightSource) {
                 Settings.AUTO_NIGHT_SENSOR -> lightDetector.isNight.value
                 Settings.AUTO_NIGHT_SUNSET -> net.prototux.aare.car.AmbientLightDetector.calculateTimeBasedNight()
                 Settings.AUTO_NIGHT_CAR -> carNight ?: true

@@ -197,7 +197,7 @@ class Settings(context: Context) {
 
     /** Car screen colors: follow the car's day/night signal ([THEME_AUTO]), or always [THEME_DARK] / [THEME_LIGHT]. */
     var carTheme: String
-        get() = prefs.getString("car_theme", THEME_AUTO) ?: THEME_AUTO
+        get() = prefs.getString("car_theme", THEME_DARK) ?: THEME_DARK
         set(v) = prefs.edit { putString("car_theme", v) }
 
     /** Source for auto day/night detection: [AUTO_NIGHT_HYBRID] (default), [AUTO_NIGHT_SENSOR], [AUTO_NIGHT_CAR], or [AUTO_NIGHT_SUNSET]. */
