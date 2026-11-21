@@ -55,7 +55,7 @@ adb install -r app-release.apk
 ```
 
 - **Obtainium:** Add repository URL `https://github.com/athanasso/AARE` to track and install updates automatically.
-- **Direct Download:** Download `aare-cockpit-v1.5.0.apk` from the latest GitHub release.
+- **Direct Download:** Download `aare-1.5.1.apk` from the latest [GitHub Releases](https://github.com/athanasso/AARE/releases).
 
 Prebuilt APKs from GitHub Releases are signed and ready to install directly on your device.
 Builds you compile yourself locally are signed with your debug key; uninstall any previous version before switching between different signing keys.

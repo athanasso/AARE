@@ -1,7 +1,7 @@
 id=com.athanasso.aare.xposed
 name=AARE Cockpit host shims
-version=1.5.0
-versionCode=10500
+version=1.5.1
+versionCode=10501
 author=athanasso
 description=Lets AARE Cockpit host Android Auto apps that refuse a non-Google host, on a rooted phone: Car App Library apps (Waze) via HostValidator, Google Maps via its CAPTURE_VIDEO_OUTPUT check, media apps (Spotify, VRadio) via their MediaBrowserService caller allowlist, plus AARE's own privileged permissions and MediaProjection. All gated to AARE Cockpit's uid.
 scope=com.athanasso.aare
