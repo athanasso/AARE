@@ -99,6 +99,9 @@
     <string name="greeting_evening">Good evening</string>
     <string name="setup_status_certificate">certificate: %1$s</string>
     <string name="setup_status_disconnected_hint">Plug the phone into the car\'s Android Auto USB port, or connect to a paired car wirelessly.</string>
+    <string name="setup_aa_conflict_title">Turn off the phone\'s built-in Android Auto</string>
+    <string name="setup_aa_conflict_hint">Google\'s Android Auto is installed and enabled on this phone. It grabs the car connection before AARE, so the head unit may stay blank or keep reconnecting. Disable (or force-stop) it on the phone, then reconnect.</string>
+    <string name="setup_aa_conflict_action">Open Android Auto settings</string>
     <string name="setup_status_last_error">Last error: %1$s</string>
     <string name="setup_trust_new_cert">Trust this head unit\'s new certificate</string>
     <string name="setup_trust_head_unit">Trust this head unit</string>

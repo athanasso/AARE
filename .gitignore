@@ -48,5 +48,8 @@ google-services.json
 *.apkm
 *.xapk
 
+# Local agent session stats
+.github/context-mode/
+
 # Claude Code agent worktrees
 .claude/

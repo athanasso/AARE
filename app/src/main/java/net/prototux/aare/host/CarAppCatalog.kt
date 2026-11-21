@@ -15,13 +15,18 @@ data class CarAppInfo(
     val icon: Bitmap?,
     val categories: Set<String>,
     val minApiLevel: Int,
+    /**
+     * The app also has what Android Auto requires of a real navigation app: the navigation
+     * templates permission, and a car service answering "navigate to" (geo:) links.
+     */
+    val navigationCapable: Boolean = false,
 ) {
     val packageName: String get() = service.packageName
     /**
      * The NAVIGATION category is self-declared by the app, in its own manifest.
      * Trusted for known navigation packages or any Car App Library app declaring the NAVIGATION category.
      */
-    val isNavigation: Boolean get() = CATEGORY_NAVIGATION in categories && packageName !in ROGUE_NAVIGATION_PACKAGES
+    val isNavigation: Boolean get() = CATEGORY_NAVIGATION in categories && (isKnownNavigationPackage(packageName) || navigationCapable) && packageName !in ROGUE_NAVIGATION_PACKAGES
 
     companion object {
         const val SERVICE_ACTION = "androidx.car.app.CarAppService"
@@ -52,7 +57,20 @@ data class CarAppInfo(
             "com.mapswithme.maps.pro",      // MAPS.ME
             "cz.seznam.mapy",               // Mapy.cz
             "com.citymapper.app.release",   // Citymapper
+            "app.organicmaps",              // Organic Maps
+            "app.comaps",                   // CoMaps
+            "com.generalmagic.magicearth",  // Magic Earth
+            "com.huawei.maps.app",          // Petal Maps
+            "com.mapfactor.navigator",      // MapFactor Navigator
+            "com.headunit.nav",             // Horizon Maps (and its .dev/.public/.play builds)
         )
+
+        const val ACTION_NAVIGATE = "androidx.car.app.action.NAVIGATE"
+        const val PERMISSION_NAVIGATION_TEMPLATES = "androidx.car.app.NAVIGATION_TEMPLATES"
+
+        /** In [KNOWN_NAVIGATION_PACKAGES], or a build variant of one ("com.headunit.nav.play"). */
+        fun isKnownNavigationPackage(pkg: String): Boolean =
+            pkg in KNOWN_NAVIGATION_PACKAGES || KNOWN_NAVIGATION_PACKAGES.any { pkg.startsWith("$it.") }
 
         /** Packages that provide system car framework services and must never be listed as user car apps. */
         val IGNORED_PACKAGES = setOf(
@@ -85,6 +103,19 @@ object CarAppCatalog {
         val flags = PackageManager.GET_META_DATA or PackageManager.GET_RESOLVED_FILTER
         val found = if (Build.VERSION.SDK_INT >= 33) pm.queryIntentServices(intent, PackageManager.ResolveInfoFlags.of(flags.toLong()))
             else @Suppress("DEPRECATION") pm.queryIntentServices(intent, flags)
+        // Packages whose car service answers "navigate to" links, which Android Auto requires of
+        // every navigation app (voice "navigate to…", other apps' directions).
+        val navigateIntent = Intent(CarAppInfo.ACTION_NAVIGATE, android.net.Uri.parse("geo:0,0?q=test"))
+        val navigateHandlers = runCatching {
+            (if (Build.VERSION.SDK_INT >= 33) pm.queryIntentServices(navigateIntent, PackageManager.ResolveInfoFlags.of(0))
+                else @Suppress("DEPRECATION") pm.queryIntentServices(navigateIntent, 0))
+                .mapNotNullTo(HashSet()) { it.serviceInfo?.packageName }
+        }.getOrDefault(emptySet<String>())
+        fun requestsNavigationTemplates(pkg: String): Boolean = runCatching {
+            @Suppress("DEPRECATION")
+            pm.getPackageInfo(pkg, PackageManager.GET_PERMISSIONS).requestedPermissions.orEmpty()
+                .contains(CarAppInfo.PERMISSION_NAVIGATION_TEMPLATES)
+        }.getOrDefault(false)
         return found.mapNotNull { ri ->
             val si = ri.serviceInfo ?: return@mapNotNull null
             val appInfo = si.applicationInfo ?: return@mapNotNull null
@@ -117,6 +148,8 @@ object CarAppCatalog {
                     ?: runCatching { si.loadIcon(pm).toBitmap(iconSizePx, iconSizePx) }.getOrNull(),
                 categories = categories,
                 minApiLevel = minApi,
+                navigationCapable = CarAppInfo.CATEGORY_NAVIGATION in categories &&
+                    si.packageName in navigateHandlers && requestsNavigationTemplates(si.packageName),
             )
         }.distinctBy { it.packageName }
     }

@@ -271,11 +271,11 @@ internal fun HybridShell(
     val darkBars = remember(state.shellStyle) { barPaletteFor(state.shellStyle).forClassic() }
     val barPalette = if (state.darkBar) darkBars else palette
     val bars: @Composable (@Composable () -> Unit) -> Unit = { content ->
-        if (barPalette === palette) content() else MaterialTheme(colorScheme = colorSchemeFor(barPalette), content = content)
+        if (barPalette === palette) content() else net.prototux.aare.ui.theme.CarColors(colorSchemeFor(barPalette), content)
     }
     val onRight = state.railOnRight
     var railVisible by remember(state.railAutoHide) { mutableStateOf(!state.railAutoHide) }
-    MaterialTheme(colorScheme = colorSchemeFor(palette)) {
+    net.prototux.aare.ui.theme.CarColors(colorSchemeFor(palette)) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val dimens = net.prototux.aare.ui.theme.carDimensFor(maxWidth, maxHeight)
             CompositionLocalProvider(LocalCarDimens provides dimens.copy(cardRadius = if (dimens.isCompact) 16.dp else 24.dp, gutter = if (dimens.isCompact) 8.dp else 12.dp)) {
@@ -357,9 +357,13 @@ private fun HybridRail(
             Spacer(Modifier.height(8.dp))
             // The tabs share the height there is: up to 88 dp each, and on a short screen they
             // shrink (dropping their labels first) instead of running off the rail.
+            // The tabs share the height there is: up to 88 dp each, and on a short screen they
+            // shrink (dropping their labels first). Below 48 dp each they would be squeezed, with
+            // taps landing on the neighbouring tab, so the column scrolls instead.
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-                val tab = (maxHeight / 6).coerceIn(48.dp, 88.dp)
-                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
+                val (tab, fits) = railTabs(maxHeight, count = 6, min = 48.dp, max = 88.dp)
+                val column = if (fits) Modifier.fillMaxSize() else Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                Column(column, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = if (fits) Arrangement.SpaceEvenly else Arrangement.Top) {
                     HybridTab("home", stringResource(R.string.dash_menu_home), state.screen == CarScreen.Dashboard, palette, tints?.getOrNull(0), tab) { actions.goHome() }
                     HybridTab("nav", nav?.label ?: stringResource(R.string.dash_maps), on(nav), palette, tints?.getOrNull(1), tab) { nav?.let(actions::openApp) ?: actions.openLauncher() }
                     HybridTab("media", media?.label ?: stringResource(R.string.media_fallback_label), on(media), palette, tints?.getOrNull(2), tab) { media?.let(actions::openApp) ?: actions.openLauncher() }
@@ -392,6 +396,8 @@ private fun HybridTab(kind: String, label: String, selected: Boolean, palette: H
     Box(
         Modifier.size(width = 98.dp, height = height).padding(vertical = 3.dp).clip(shape)
             .then(if (fill != null) Modifier.background(fill) else Modifier)
+            // A rotary knob's focus must be visible on the rail too, not only on the cards.
+            .carFocusHighlight(shape)
             .clickable(onClickLabel = label, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

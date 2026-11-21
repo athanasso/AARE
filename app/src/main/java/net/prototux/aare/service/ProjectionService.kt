@@ -88,6 +88,10 @@ class ProjectionService : Service() {
     private var projection: MediaProjection? = null
     private var usbAccessory: UsbAccessory? = null
     private var usbRetries = 0
+    /** Failed opens of the accessory in a row (it was busy); see [openUsb]. */
+    private var usbOpenRetries = 0
+    /** A retry of a busy accessory is scheduled: keeps the service from going idle meanwhile. */
+    private var usbOpenRetryPending = false
     /** A wireless link that dropped mid-drive (the dongle rebooting, a brief Wi-Fi/Bluetooth hiccup) usually comes back on its own; budget like [usbRetries]. */
     private var wirelessRetries = 0
     /** [stopEverything] ran: nothing reconnects on its own until something asks this service to connect again. */
@@ -227,6 +231,10 @@ class ProjectionService : Service() {
      */
     private fun connectWireless(address: String, forceOfficial: Boolean? = null) {
         if (session != null || wirelessJob?.isActive == true) return
+        // While a USB accessory is plugged in, the cable wins and wireless stands down — otherwise the
+        // two transports interleave and fight (see the Honda/MG logs: a flapping USB session leaves gaps
+        // the Bluetooth retries jump into, and each tears the other down).
+        if (usbAttached()) { log("wireless: USB is plugged in; staying on the cable"); return }
         val adapter = getSystemService(android.bluetooth.BluetoothManager::class.java)?.adapter ?: return
         val device = runCatching { adapter.getRemoteDevice(address) }.getOrNull() ?: return
         val deviceLabel = runCatching { device.name }.getOrNull().orEmpty()
@@ -288,10 +296,15 @@ class ProjectionService : Service() {
                     throw e
                 } catch (e: Exception) {
                     log("wireless: ${e.message}")
-                    val carNotReady = generateSequence<Throwable>(e) { it.cause }.any { it is WirelessBootstrapException && it.whileNegotiating }
                     // While the handshake is still a guess, one patient retry is enough before the
                     // other is tried: a full round of waits on the wrong one costs most of a minute.
                     val guessing = auto && known == null && !wirelessProfileSwitched
+                    val negotiation = generateSequence<Throwable>(e) { it.cause }
+                        .filterIsInstance<WirelessBootstrapException>().firstOrNull { it.whileNegotiating }
+                    // A head unit that answered and then hung up on a guessed handshake refused our
+                    // answer (a smartBox dropping the link after the official-phone version reply):
+                    // go straight to the other handshake instead of waiting to repeat this one.
+                    val carNotReady = negotiation != null && !(guessing && negotiation.heardFromHeadUnit)
                     if (carNotReady && retries < (if (guessing) 1 else WIRELESS_RETRIES) && session == null) {
                         retries++
                         val wait = WIRELESS_RETRY_DELAY_MS * retries
@@ -339,6 +352,9 @@ class ProjectionService : Service() {
     private fun probeConnectedWireless() {
         if (!settings.wireless || wirelessJob?.isActive == true) { scheduleIdleStop(); return }
         if (session != null) { log("wireless: already connected; unplug USB first to connect wirelessly"); scheduleIdleStop(); return }
+        // A USB cable is the chosen path: don't also probe Bluetooth. Without this the two race while a
+        // USB session keeps flapping (connect → "read failed" → retry), each closing the other's link.
+        if (usbAttached()) { log("wireless: USB is plugged in; staying on the cable (unplug to connect wirelessly)"); scheduleIdleStop(); return }
         val connector = WirelessConnector(this, DiagAapLog)
         if (connector.missingPermissions().isNotEmpty()) { scheduleIdleStop(); return }
         val device = runCatching { connector.findConnectedHeadUnits() }.getOrDefault(emptyList()).firstOrNull()
@@ -355,6 +371,10 @@ class ProjectionService : Service() {
         main.postDelayed({ if (idle()) stopEverything() }, 3_000)
     }
 
+    /** True while an Android Auto USB accessory is physically attached: the cable is the chosen path. */
+    private fun usbAttached(): Boolean =
+        runCatching { getSystemService(UsbManager::class.java)?.accessoryList?.any { isAndroidAuto(it) } == true }.getOrDefault(false)
+
     private fun openUsb(accessory: UsbAccessory) {
         usbAccessory = accessory
         val usb = getSystemService(UsbManager::class.java)
@@ -364,8 +384,32 @@ class ProjectionService : Service() {
             requestUsbPermission(usb, accessory)
             return
         }
-        val transport = runCatching { UsbAccessoryTransport(usb, accessory) }
-            .onFailure { log("USB: ${it.message}") }.getOrNull() ?: return
+        usbOpenRetryPending = false
+        val transport = runCatching { UsbAccessoryTransport(usb, accessory) }.getOrElse { e ->
+            // Permission is granted, so a null fd means the accessory is busy: another app (almost
+            // always the phone's own Android Auto) opened it first, or the head unit is still
+            // switching the phone into accessory mode. Both usually clear within seconds.
+            if (session == null && !destroyed && usbOpenRetries < USB_OPEN_RETRIES) {
+                usbOpenRetries++
+                if (usbOpenRetries == 1) {
+                    log("USB: ${e.message}; the accessory is busy, most likely Android Auto has it open. Retrying...")
+                }
+                usbOpenRetryPending = true
+                main.postDelayed({
+                    usbOpenRetryPending = false
+                    if (session == null && !destroyed && !stopRequested) openUsb(accessory)
+                }, USB_OPEN_RETRY_DELAY_MS * usbOpenRetries)
+            } else {
+                usbOpenRetries = 0
+                val why = "can't open the car's USB connection: another app (usually Android Auto) is using it. " +
+                    "Disable the Android Auto app, or unplug, plug in again and choose AARE when Android asks."
+                log("USB: ${e.message}; $why")
+                _state.update { it.copy(status = getString(R.string.notif_status_not_connected), lastError = why) }
+                scheduleIdleStop()
+            }
+            return
+        }
+        usbOpenRetries = 0
         startSession(transport, wireless = false, peerKey = usbPeerKey(accessory), trustOnFirstUse = false)
     }
 
@@ -762,7 +806,7 @@ class ProjectionService : Service() {
     }
 
     /** Nothing to keep the service for. A held screen-capture consent counts: it can't be given again silently. */
-    private fun idle() = session == null && usbPermissionPending == null && tcpServer == null && wirelessJob?.isActive != true && projection == null
+    private fun idle() = session == null && usbPermissionPending == null && !usbOpenRetryPending && tcpServer == null && wirelessJob?.isActive != true && projection == null
 
     private fun stopEverything() {
         // No USB/wireless reconnect after this: the session's onEnded may come after the stop.
@@ -786,6 +830,9 @@ class ProjectionService : Service() {
         private const val CERT_DOWNLOAD_NOTIFICATION_ID = 4
         /** A USB session that lasted this long had recovered: its drop starts a new retry budget. */
         private const val USB_RETRY_RESET_MS = 60_000L
+        /** Opens of a busy accessory (see [openUsb]): 1.5, 3, 4.5, 6, 7.5 s apart, ~22 s in all. */
+        private const val USB_OPEN_RETRIES = 5
+        private const val USB_OPEN_RETRY_DELAY_MS = 1_500L
         /** Wireless attempts after a car that wasn't ready yet, waiting this much longer each time. */
         private const val WIRELESS_RETRIES = 2
         private const val WIRELESS_RETRY_DELAY_MS = 10_000L

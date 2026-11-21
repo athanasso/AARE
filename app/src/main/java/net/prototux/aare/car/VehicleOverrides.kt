@@ -12,6 +12,8 @@ data class VehicleOverride(
     val heightMargin: Int? = null,
     val maxHeight: Int? = null,
     val prefer60fps: Boolean? = null,
+    /** Pin H.264 for a head unit that advertises a newer codec but shows a black screen with it. */
+    val forceH264: Boolean? = null,
 )
 
 /** A rule: match a head unit by identity substrings, then apply [override]. */
@@ -41,12 +43,27 @@ object VehicleOverrides {
 
     fun file(context: Context): File = File(context.getExternalFilesDir(null), FILE)
 
+    /**
+     * Rules shipped with the app for head units with known, well-reported quirks, so the common ones
+     * work out of the box. A user rule in `vehicles.json` matching the same car always wins, so these
+     * can still be overridden per car.
+     */
+    private val BUILTIN = listOf(
+        // MG / SAIC cars with Desay SV head units (e.g. the NV6064 in the MG Windsor EV) advertise
+        // H.265 but show a black screen with it — connected, nothing on the display. Pin H.264.
+        VehicleRule(make = null, model = null, name = "SAIC MOTOR", override = VehicleOverride(forceH264 = true)),
+        VehicleRule(make = null, model = null, name = "NV6064", override = VehicleOverride(forceH264 = true)),
+    )
+
     /** The override for this head unit, or null. The file is tiny, so it is read each connection. */
     fun forHeadUnit(context: Context, make: String, model: String, name: String): VehicleOverride? {
         val text = runCatching { file(context).takeIf { it.exists() }?.readText() }.getOrNull()
         val rules = text?.let { runCatching { parse(it) }.onFailure { Log.w(TAG, "vehicles.json: ${it.message}") }.getOrNull() } ?: emptyList()
         val customMatch = rules.firstOrNull { it.matches(make, model, name) }?.override
         if (customMatch != null) return customMatch
+
+        val builtinMatch = BUILTIN.firstOrNull { it.matches(make, model, name) }?.override
+        if (builtinMatch != null) return builtinMatch
 
         // Built-in presets for common aftermarket Chinese head units (Zlink, Tlink, Carlinkit, etc.)
         val combined = "$make $model $name".lowercase()
@@ -76,7 +93,7 @@ object VehicleOverrides {
                 make = str(m, "make"), model = str(m, "model"), name = str(m, "name"),
                 override = VehicleOverride(
                     dpi = int(a, "dpi"), widthMargin = int(a, "widthMargin"), heightMargin = int(a, "heightMargin"),
-                    maxHeight = int(a, "maxHeight"), prefer60fps = bool(a, "prefer60fps"),
+                    maxHeight = int(a, "maxHeight"), prefer60fps = bool(a, "prefer60fps"), forceH264 = bool(a, "forceH264"),
                 ),
             )
         }
@@ -91,7 +108,7 @@ object VehicleOverrides {
             {
               "_comment": "Match a head unit by make/model/display-name substrings (case-insensitive).",
               "match": { "make": "", "model": "", "name": "" },
-              "apply": { "dpi": 160, "widthMargin": 0, "heightMargin": 0, "maxHeight": 1080, "prefer60fps": true }
+              "apply": { "dpi": 160, "widthMargin": 0, "heightMargin": 0, "maxHeight": 1080, "prefer60fps": true, "forceH264": false }
             }
           ]
         }

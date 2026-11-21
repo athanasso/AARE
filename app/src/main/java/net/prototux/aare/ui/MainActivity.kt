@@ -84,6 +84,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Tv
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -689,6 +690,10 @@ private fun CarsTab(settings: Settings, state: ProjectionService.State, previewR
                     Text(stringResource(R.string.setup_status_disconnected_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+            // The commonest reason the head unit stays blank: Google's own Android Auto is still
+            // enabled and claims the car connection first. Only shown when it's actually installed
+            // and enabled, so it isn't a false alarm.
+            item { AndroidAutoConflictCard() }
         }
         val cars = settings.knownCars
         if (cars.isNotEmpty()) item {
@@ -709,6 +714,45 @@ private fun CarsTab(settings: Settings, state: ProjectionService.State, previewR
                 }
             }
         }
+    }
+}
+
+/**
+ * Shown on the "My cars" tab while disconnected, but only when Google's Android Auto
+ * (`com.google.android.projection.gearhead`) is installed and enabled: it claims the car's USB
+ * accessory / wireless projection before AARE, which is the single most common reason the head
+ * unit stays blank or keeps reconnecting. The button opens its App info so the user can disable or
+ * force-stop it (AARE can't, and shouldn't, do that for them).
+ */
+@Composable
+private fun AndroidAutoConflictCard() {
+    val ctx = LocalContext.current
+    val aaPkg = "com.google.android.projection.gearhead"
+    // Checked once per entry to this screen, not every recomposition.
+    val enabled = remember {
+        try { ctx.packageManager.getApplicationInfo(aaPkg, 0).enabled } catch (e: Exception) { false }
+    }
+    if (!enabled) return
+    val warn = Color(0xFFFFB547)
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
+            .background(warn.copy(alpha = 0.12f)).border(1.dp, warn.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
+            .padding(20.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.Warning, null, tint = warn)
+            Spacer(Modifier.width(12.dp))
+            Text(stringResource(R.string.setup_aa_conflict_title), style = MaterialTheme.typography.titleMedium)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(stringResource(R.string.setup_aa_conflict_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(4.dp))
+        TextButton(onClick = {
+            try {
+                ctx.startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", aaPkg, null))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (e: Exception) { /* settings app refused the deep link; nothing to do */ }
+        }) { Text(stringResource(R.string.setup_aa_conflict_action)) }
     }
 }
 

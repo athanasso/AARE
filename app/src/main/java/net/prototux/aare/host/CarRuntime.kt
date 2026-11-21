@@ -108,6 +108,12 @@ class CarRuntime(
     override var screenWidthDp by mutableIntStateOf(1280)
     override var screenHeightDp by mutableIntStateOf(720)
     override var densityDpi by mutableIntStateOf(160)
+    /**
+     * Render a navigation app's live map on the dashboard's map card (not just a button). Only the
+     * real car screen sets this; the phone's small preview thumbnails leave it off so they don't each
+     * steal or spin up a navigation session.
+     */
+    var showsLiveProjection = false
     @Volatile override var carLocation: Location? = null
     @Volatile override var carHeading: Float? = null
 
@@ -760,8 +766,16 @@ class CarRuntime(
                         }
                     },
                     navMap = { app, mod ->
-                        if (app.kind == CarAppKind.STANDALONE) StandaloneNavCard(app, mod) { actions.openApp(app) }
-                        else shownConnection(app.id)?.let { CarAppScreen(it, this, mod, compact = true) }
+                        when (app.kind) {
+                            CarAppKind.STANDALONE -> StandaloneNavCard(app, mod) { actions.openApp(app) }
+                            // A hosted navigation app (Horizon Maps, Sygic…) has a single session per
+                            // host app, and the phone's preview thumbnails run in the same process as
+                            // the car: a thumbnail binding it took the session over, map surface and
+                            // all, and the car's dashboard card was left with the buttons and no map
+                            // (only opening the app on the car took it back). Thumbnails get a button.
+                            else -> if (showsLiveProjection) shownConnection(app.id)?.let { CarAppScreen(it, this, mod, compact = true) }
+                                else StandaloneNavCard(app, mod) { actions.openApp(app) }
+                        }
                     },
                     overlay = { mod ->
                         val entry = ui.app(ui.assistantAppId)

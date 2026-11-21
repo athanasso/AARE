@@ -33,6 +33,7 @@ class CarPreviewActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         val settings = Settings(this)
         runtime = CarRuntime(this, lifecycleScope, settings, MediaHub(this, lifecycleScope), primary = false)
+        runtime.showsLiveProjection = true
         val dm = resources.displayMetrics
         val dpi = settings.carDpi.takeIf { it > 0 } ?: dm.densityDpi
         val scale = dpi.toFloat() / 160f
